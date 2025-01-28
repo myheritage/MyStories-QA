@@ -1,0 +1,27 @@
+{
+  "name": "mystories-tests",
+  "version": "1.0.0",
+  "description": "Automated tests for MyStories website",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:self": "playwright test tests/e2e/selfOrder.spec.ts",
+    "test:gift": "playwright test tests/e2e/giftOrder.spec.ts",
+    "show-report": "playwright show-report",
+    "codegen": "playwright codegen"
+  },
+  "keywords": [
+    "testing",
+    "playwright",
+    "automation"
+  ],
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/dotenv": "^8.2.3",
+    "@types/node": "^20.10.0",
+    "dotenv": "^16.4.7",
+    "typescript": "^5.3.0"
+  }
+}
