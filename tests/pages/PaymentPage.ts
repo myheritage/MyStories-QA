@@ -62,12 +62,15 @@ export class PaymentPage extends BasePage {
   private readonly promoCodeInput = this.page.getByPlaceholder('Add promotion code');
   private readonly promoCodeApplyButton = this.page.getByRole('button', { name: 'Apply' });
   private readonly subscribeButton = this.page.getByRole('button', { name: 'Subscribe' });
+  private readonly giftSubscribeButton = this.page.getByTestId('hosted-payment-submit-button');
   private readonly errorMessage = this.page.locator('div').filter({ hasText: /^Your credit card was declined\. Try paying with a debit card instead\.$/ });
+  private readonly visitDashboardButton = this.page.getByRole('button', { name: 'Visit your dashboard' });
 
   // Price locators
-  private readonly subtotalAmount = this.page.locator(PRICES.SELECTORS.SUBTOTAL_AMOUNT).getByText('$').first();
-  private readonly totalAmount = this.page.locator(PRICES.SELECTORS.TOTAL_AMOUNT).getByText(`$${PRICES.PROMO_CODES.FULL_DISCOUNT.finalPrice}`);
+  private readonly basePrice = this.page.getByTestId('product-summary-total-amount').getByText('$');
+  private readonly additionalCopyPrice = this.page.getByText(`$${PRICES.ADDITIONAL_COPY_PRICE}`);
   private readonly discountPercentage = this.page.getByText('% off');
+  private readonly totalAmount = this.page.locator(PRICES.SELECTORS.TOTAL_AMOUNT).getByText('$').first();
 
   constructor(page: Page) {
     super(page);
@@ -144,8 +147,13 @@ export class PaymentPage extends BasePage {
         throw new Error(`Expected ${PRICES.PROMO_CODES.FULL_DISCOUNT.discountPercentage}% discount but got ${percentage}%`);
       }
 
-      // Wait for and verify total amount
-      await this.totalAmount.waitFor({ state: 'visible', timeout: 5000 });
+      // Verify total amount
+      const total = await this.getTotalAmount();
+      console.log('Total amount after discount:', total);
+      if (!total.includes(PRICES.PROMO_CODES.FULL_DISCOUNT.finalPrice)) {
+        throw new Error(`Expected $${PRICES.PROMO_CODES.FULL_DISCOUNT.finalPrice} total but got ${total}`);
+      }
+
       console.log('Promo code applied successfully');
     } catch (error) {
       console.error('Error applying promo code:', error);
@@ -153,15 +161,21 @@ export class PaymentPage extends BasePage {
     }
   }
 
-  async completePayment(card: StripeCard) {
+  async completePayment(card: StripeCard, isGiftOrder = false) {
     console.log('Starting payment process...');
     await this.fillPaymentDetails(card);
     
     console.log('Waiting for price updates to complete...');
     await this.page.waitForTimeout(2000);
     
-    console.log('Clicking subscribe button');
-    await this.subscribeButton.click();
+    // Use appropriate submit button based on order type
+    if (isGiftOrder) {
+      console.log('Clicking gift subscribe button');
+      await this.giftSubscribeButton.click();
+    } else {
+      console.log('Clicking subscribe button');
+      await this.subscribeButton.click();
+    }
 
     if (card.scenario === 'success') {
       console.log('Waiting for successful navigation');
@@ -170,6 +184,16 @@ export class PaymentPage extends BasePage {
       console.log('Waiting for error message');
       await this.errorMessage.waitFor({ state: 'visible' });
     }
+  }
+
+  async visitDashboard() {
+    console.log('Waiting for dashboard button');
+    await this.visitDashboardButton.waitFor({ state: 'visible' });
+    console.log('Clicking Visit your dashboard button');
+    await Promise.all([
+      this.page.waitForURL('https://app.mystories.com/'),
+      this.visitDashboardButton.click()
+    ]);
   }
 
   async getErrorMessage(): Promise<string | null> {
@@ -188,8 +212,8 @@ export class PaymentPage extends BasePage {
   }
 
   async getMarketPrice(): Promise<string> {
-    const text = await this.subtotalAmount.textContent();
-    console.log('Subtotal amount:', text);
+    const text = await this.basePrice.textContent();
+    console.log('Market price:', text);
     return text || '0';
   }
 
