@@ -8,7 +8,7 @@ export class HomePage extends BasePage {
 
   // Locators
   private readonly orderNowButton = this.page.getByTestId('linkElement').filter({ hasText: 'Order now' }).first();
-  private readonly loginButton = this.page.getByRole('link', { name: 'Log in' });
+  protected readonly loginButton = this.page.getByRole('link', { name: 'Log in' });
   
   // Cookie consent handler
   private readonly cookieHandler: CookieConsentHandler;
@@ -55,5 +55,10 @@ export class HomePage extends BasePage {
     // Wait for navigation
     await this.page.waitForURL(/\/login/);
     await this.page.waitForLoadState('domcontentloaded');
+  }
+
+  async requestLoginLink(email: string) {
+    await this.page.getByPlaceholder('Email').fill(email);
+    await this.page.getByRole('button', { name: 'Send login link' }).click();
   }
 }
