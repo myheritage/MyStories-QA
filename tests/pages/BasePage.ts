@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test';
+import { URLS } from '../data/test.config';
 
 export enum CookieConsentOption {
   ALLOW_ALL = 'allow_all',
@@ -6,7 +7,29 @@ export enum CookieConsentOption {
 }
 
 export class BasePage {
+  // User menu locators
+  protected readonly userMenuButton = this.page.getByRole('img', { name: 'caret' });
+  protected readonly logoutButton = this.page.getByText('Log out');
+  protected readonly loginButton = this.page.getByRole('link', { name: 'Log In' });
+  protected readonly emailInput = this.page.getByRole('textbox', { name: 'your email address' });
+  protected readonly sendLinkButton = this.page.getByRole('button', { name: 'Send link' });
+
   constructor(protected page: Page) {}
+
+  async logout() {
+    console.log('Logging out');
+    await this.userMenuButton.click();
+    await this.logoutButton.click();
+    await this.page.waitForURL(URLS.HOME);
+  }
+
+  async requestLoginLink(email: string) {
+    console.log('Requesting login link for:', email);
+    await this.loginButton.click();
+    await this.page.waitForURL(URLS.LOGIN);
+    await this.emailInput.fill(email);
+    await this.sendLinkButton.click();
+  }
 
   protected async addTestMode(url: string): Promise<string> {
     const urlObj = new URL(url);

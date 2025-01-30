@@ -213,4 +213,10 @@ export class QuestionsPage extends BasePage {
     console.log('Going back to main questions page');
     await this.backButton.click();
   }
+
+  async verifyLoggedInUser(firstName: string) {
+    console.log('Verifying logged in as:', firstName);
+    await this.myStoriesHeading.waitFor({ state: 'visible' });
+    await this.page.getByText(firstName).waitFor({ state: 'visible' });
+  }
 }

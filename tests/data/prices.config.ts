@@ -12,7 +12,7 @@ export const PRICES = {
   // Promo code configurations
   PROMO_CODES: {
     FULL_DISCOUNT: {
-      code: 'TESTDISCOUNT',        // Code to apply in tests
+      code: 'MH100',        // Code to apply in tests
       discountPercentage: '100',   // Full discount (100%)
       finalPrice: '0.00'           // Expected price after discount
     }

@@ -1,7 +1,13 @@
+import { EmailHandler } from './EmailHandler';
+import { TEST_USER_DEFAULTS } from '../data/test.config';
+
 export interface StoryTellerDetails {
   firstName: string;
   lastName: string;
   email: string;
+  country: string;
+  state?: string;
+  copies: number;
   giftDate?: string;
   message?: string;
   giftGiverName?: string;
@@ -14,6 +20,16 @@ export interface GiftGiverDetails {
   country: string;
   state?: string;
   copies: number;
+}
+
+interface GenerateOptions {
+  useHardcoded?: boolean;  // If true, use fixed data from config. Default is false (use random)
+  withState?: boolean;     // For random data: if true, use US/state
+  isGiftRecipient?: boolean; // For hardcoded data: which defaults to use
+}
+
+interface CreateTestUserOptions extends GenerateOptions {
+  isGiftFlow?: boolean;
 }
 
 export class TestDataGenerator {
@@ -46,47 +62,90 @@ export class TestDataGenerator {
     return `This is an automated test message created at ${timestamp}. I wanted to give you something special - a chance to share your amazing life stories. Looking forward to reading them!`;
   }
 
-  async generateStoryTeller(): Promise<StoryTellerDetails> {
+  async generateStoryTeller(options: GenerateOptions = {}): Promise<StoryTellerDetails> {
     const firstName = this.getRandomElement(this.firstNames);
     const lastName = this.getRandomElement(this.lastNames);
     
-    return {
-      firstName,
-      lastName,
-      email: this.generateEmail(firstName, lastName)
-    };
+    // By default, generate random data
+    if (!options.useHardcoded) {
+      return {
+        firstName,
+        lastName,
+        email: this.generateEmail(firstName, lastName),
+        country: options.withState ? 'United States' : this.getRandomElement(this.countries),
+        state: options.withState ? this.getRandomElement(this.usStates) : undefined,
+        copies: Math.floor(Math.random() * 3) + 1  // Random 1-3 copies
+      };
+    }
+
+    // Use hardcoded data if requested
+    const defaults = options.isGiftRecipient ? 
+      TEST_USER_DEFAULTS.GIFT_RECIPIENT : 
+      TEST_USER_DEFAULTS.PURCHASER;
+    return { ...defaults };
   }
 
-  async generateGiftStoryTeller(futureDate?: string): Promise<StoryTellerDetails> {
+  async generateGiftGiver(options: GenerateOptions = {}): Promise<GiftGiverDetails> {
     const firstName = this.getRandomElement(this.firstNames);
     const lastName = this.getRandomElement(this.lastNames);
-    const giftGiverName = `${this.getRandomElement(this.firstNames)} ${this.getRandomElement(this.lastNames)}`;
     
-    // If no date provided, don't set one (defaults to today)
-    const giftDate = futureDate || undefined;
-    
-    return {
-      firstName,
-      lastName,
-      email: this.generateEmail(firstName, lastName),
-      giftDate,
-      message: this.generateGiftMessage(),
-      giftGiverName
-    };
+    // By default, generate random data
+    if (!options.useHardcoded) {
+      return {
+        firstName,
+        lastName,
+        email: this.generateEmail(firstName, lastName),
+        country: options.withState ? 'United States' : this.getRandomElement(this.countries),
+        state: options.withState ? this.getRandomElement(this.usStates) : undefined,
+        copies: Math.floor(Math.random() * 3) + 1  // Random 1-3 copies
+      };
+    }
+
+    // Use hardcoded data if requested
+    return { ...TEST_USER_DEFAULTS.PURCHASER };
   }
 
-  async generateGiftGiver(withState = false): Promise<GiftGiverDetails> {
-    const firstName = this.getRandomElement(this.firstNames);
-    const lastName = this.getRandomElement(this.lastNames);
-    const country = withState ? 'United States' : this.getRandomElement(this.countries);
-    
-    return {
-      firstName,
-      lastName,
-      email: this.generateEmail(firstName, lastName),
-      country,
-      state: withState ? this.getRandomElement(this.usStates) : undefined,
-      copies: 1
-    };
+  /**
+   * Creates test user(s) with MailSlurp inboxes
+   * - For regular flow: Returns storyteller with MailSlurp email
+   * - For gift flow: Returns both storyteller and gift giver with MailSlurp emails
+   */
+  async createTestUser(emailHandler: EmailHandler, options: CreateTestUserOptions = {}): Promise<{
+    storyteller: StoryTellerDetails;
+    giftGiver?: GiftGiverDetails;
+  }> {
+    if (options.isGiftFlow) {
+      // Create gift flow users
+      const giftGiver = await this.generateGiftGiver(options);
+      const storyteller = await this.generateStoryTeller({
+        ...options,
+        isGiftRecipient: true
+      });
+
+      // Create MailSlurp inboxes
+      const storytellerEmail = await emailHandler.createMailSlurpInbox();
+      const giftGiverEmail = await emailHandler.createMailSlurpInbox();
+
+      // Register inboxes
+      await emailHandler.registerInbox(storytellerEmail, true);
+      await emailHandler.registerInbox(giftGiverEmail);
+
+      // Update emails and set gift giver name
+      storyteller.email = storytellerEmail;
+      giftGiver.email = giftGiverEmail;
+      storyteller.giftGiverName = giftGiver.firstName;
+
+      return { storyteller, giftGiver };
+    } else {
+      // Create single user
+      const storyteller = await this.generateStoryTeller(options);
+      
+      // Create and register MailSlurp inbox
+      const email = await emailHandler.createMailSlurpInbox();
+      await emailHandler.registerInbox(email);
+      storyteller.email = email;
+
+      return { storyteller };
+    }
   }
 }
