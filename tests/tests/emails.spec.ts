@@ -27,7 +27,9 @@ const test = base.extend<{ emailHandler: EmailHandler }>({
   }
 });
 
-test.describe('Self Purchase Emails', () => {
+test.describe('Self Purchase Emails', {
+  tag: ['@Emails']
+}, () => {
   let testData: TestDataGenerator;
 
   test.beforeEach(() => {
@@ -85,7 +87,9 @@ test.describe('Self Purchase Emails', () => {
   });
 });
 
-test.describe('Gift Flow Emails', () => {
+test.describe('Gift Flow Emails', {
+  tag: ['@Emails']
+}, () => {
   let testData: TestDataGenerator;
 
   test.beforeEach(() => {
