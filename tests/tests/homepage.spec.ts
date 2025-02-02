@@ -7,7 +7,9 @@ import { LinkCheckerHelper, LinkCheckResult } from '../helpers/LinkCheckerHelper
 import path from 'path';
 
 test.describe('Homepage Basic Validations', () => {
-  test('should have correct window title', async ({ page }) => {
+  test('should have correct window title', {
+    tag: ['@CD']
+  }, async ({ page }) => {
     const homePage = new HomePage(page);
     await homePage.goto();
     await expect(page).toHaveTitle(PAGE_TITLES.HOME);
