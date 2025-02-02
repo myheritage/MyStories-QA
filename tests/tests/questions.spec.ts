@@ -11,8 +11,12 @@ import * as path from 'path';
 
 const testData = new TestDataGenerator();
 
-test.describe('Questions Page', () => {
-  test('complete answer workflow', async ({ page }, testInfo) => {
+test.describe('Questions Page', {
+  tag: ['@Full']
+}, () => {
+  test('complete answer workflow', {
+    tag: ['@Sanity']
+  }, async ({ page }, testInfo) => {
     test.setTimeout(60000); // 60 seconds since payment flow can take time
     
     try {
@@ -24,7 +28,7 @@ test.describe('Questions Page', () => {
       const questionsPage = new QuestionsPage(page);
 
       // Generate test data
-      const giftGiver = await testData.generateGiftGiver(true);
+      const giftGiver = await testData.generateGiftGiver({ withState: true });
       console.log('Generated test data:', giftGiver);
 
       // Complete purchase flow
@@ -97,7 +101,7 @@ test.describe('Questions Page', () => {
       const questionsPage = new QuestionsPage(page);
 
       // Generate test data
-      const giftGiver = await testData.generateGiftGiver(true);
+      const giftGiver = await testData.generateGiftGiver({ withState: true });
       console.log('Generated test data:', giftGiver);
 
       // Complete purchase flow

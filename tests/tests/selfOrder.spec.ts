@@ -7,14 +7,18 @@ import { TestDataGenerator } from '../helpers/TestDataGenerator';
 import { CookieConsentOption } from '../pages/BasePage';
 import { PRICES, calculateTotalPrice } from '../data/prices.config';
 
-test.describe('Self Order Flow', () => {
+test.describe('Self Order Flow', {
+  tag: ['@Full']
+}, () => {
   let testData: TestDataGenerator;
 
   test.beforeEach(() => {
     testData = new TestDataGenerator();
   });
 
-  test('complete order with successful payment', async ({ page }) => {
+  test('complete order with successful payment', {
+    tag: ['@Sanity']
+  }, async ({ page }) => {
     console.log('Starting successful payment test...');
     
     // Initialize page objects

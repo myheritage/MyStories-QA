@@ -7,14 +7,18 @@ import { TestDataGenerator } from '../helpers/TestDataGenerator';
 import { CookieConsentOption } from '../pages/BasePage';
 import { PRICES, calculateTotalPrice } from '../data/prices.config';
 
-test.describe('Gift Order Flow', () => {
+test.describe('Gift Order Flow', {
+  tag: ['@Full']
+}, () => {
   let testData: TestDataGenerator;
 
   test.beforeEach(() => {
     testData = new TestDataGenerator();
   });
 
-  test('complete gift order', async ({ page }) => {
+  test('complete gift order', {
+    tag: ['@Sanity']
+  }, async ({ page }) => {
     console.log('Starting gift order test...');
     
     // Initialize page objects

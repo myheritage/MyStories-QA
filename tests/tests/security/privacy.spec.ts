@@ -28,7 +28,9 @@ const test = base.extend<{ emailHandler: EmailHandler }>({
   }
 });
 
-test.describe('Privacy & Data Protection', () => {
+test.describe('Privacy & Data Protection', {
+  tag: ['@Full', '@Security']
+}, () => {
   let securityHelper: SecurityHelper;
   let testData: TestDataGenerator;
 

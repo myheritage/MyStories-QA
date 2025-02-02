@@ -28,7 +28,9 @@ const test = base.extend<{ emailHandler: EmailHandler }>({
   }
 });
 
-test.describe('Visual Regression Tests', () => {
+test.describe('Visual Regression Tests', {
+  tag: ['@Visual', '@Full']
+}, () => {
   const visualHelper = new VisualTestHelper();
   let testData: TestDataGenerator;
 

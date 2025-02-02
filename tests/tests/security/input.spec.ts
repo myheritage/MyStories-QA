@@ -25,7 +25,9 @@ import { TestFlowHelper } from '../../helpers/TestFlowHelper';
 import { SECURITY_CONFIG } from '../../data/security.config';
 import { CookieConsentOption } from '../../pages/BasePage';
 
-test.describe('Input Validation & Sanitization', () => {
+test.describe('Input Validation & Sanitization', {
+  tag: ['@Full', '@Security']
+}, () => {
   let securityHelper: SecurityHelper;
   let testData: TestDataGenerator;
 

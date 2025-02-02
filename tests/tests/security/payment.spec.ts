@@ -26,7 +26,9 @@ const test = base.extend<{ emailHandler: EmailHandler }>({
   }
 });
 
-test.describe('Payment Security', () => {
+test.describe('Payment Security', {
+  tag: ['@Full', '@Security']
+}, () => {
   let securityHelper: SecurityHelper;
   let testData: TestDataGenerator;
 
