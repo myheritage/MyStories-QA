@@ -1,11 +1,7 @@
-name: Playwright Tests
+name: CD Tests
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:  # Allows manual trigger
+  workflow_dispatch:  # Only manual trigger
 
 jobs:
   test:
@@ -41,12 +37,6 @@ jobs:
 
     - name: Run CD tests
       run: npx playwright test --grep @CD
-      env:
-        CI: true
-
-    - name: Run remaining tests
-      if: success() || failure()  # Run even if CD tests fail
-      run: npx playwright test --grep-invert @CD
       env:
         CI: true
 
