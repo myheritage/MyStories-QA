@@ -26,6 +26,7 @@ interface GenerateOptions {
   useHardcoded?: boolean;  // If true, use fixed data from config. Default is false (use random)
   withState?: boolean;     // For random data: if true, use US/state
   isGiftRecipient?: boolean; // For hardcoded data: which defaults to use
+  giftDate?: string;      // For gift orders: scheduled delivery date
 }
 
 interface CreateTestUserOptions extends GenerateOptions {
@@ -74,7 +75,8 @@ export class TestDataGenerator {
         email: this.generateEmail(firstName, lastName),
         country: options.withState ? 'United States' : this.getRandomElement(this.countries),
         state: options.withState ? this.getRandomElement(this.usStates) : undefined,
-        copies: Math.floor(Math.random() * 3) + 1  // Random 1-3 copies
+        copies: Math.floor(Math.random() * 3) + 1,  // Random 1-3 copies
+        giftDate: options.giftDate
       };
     }
 
