@@ -24,10 +24,12 @@ jobs:
       run: npx playwright install --with-deps chromium
 
     - name: Create env file
+      env:
+        SANDBOX_URL: ${{ secrets.SANDBOX_URL }}
       run: |
         echo "EMAIL_MODE=fake" >> .env
         echo "TEST_ENVIRONMENT=sandbox" >> .env
-        echo "SANDBOX_URL=${{ secrets.SANDBOX_URL }}" >> .env
+        echo "SANDBOX_URL=$SANDBOX_URL" >> .env
         echo "STRIPE_SANDBOX=true" >> .env
         echo "BROWSER=chromium" >> .env
         echo "HEADLESS=true" >> .env

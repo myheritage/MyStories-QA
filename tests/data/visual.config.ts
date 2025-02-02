@@ -26,7 +26,7 @@ export const VISUAL_CONFIG = {
    */
   pages: {
     // Core pages available to all users
-    home: false,                    // Main landing page
+    home: true,                    // Main landing page
     login: false,                   // Email-based login page
     questions: false,               // Weekly questions dashboard
     storyDetails: false,            // Individual story view/edit

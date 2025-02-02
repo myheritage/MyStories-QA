@@ -54,7 +54,9 @@ function formatCookieComparison(expectedCookies: CookieConfig[], actualCookies: 
   }
 }
 
-test.describe('Cookie Consent', () => {
+test.describe('Cookie Consent', {
+  tag: ['@Full', '@Cookies']
+}, () => {
   test('should only set mandatory cookies when denying consent', async ({ page, context }) => {
     // Go to homepage
     await page.goto(URLS.HOME);
