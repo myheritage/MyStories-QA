@@ -6,7 +6,9 @@ import { CookieConsentOption } from '../pages/BasePage';
 import { LinkCheckerHelper, LinkCheckResult } from '../helpers/LinkCheckerHelper';
 import path from 'path';
 
-test.describe('Homepage Basic Validations', () => {
+test.describe('Homepage Basic Validations', {
+  tag: ['@Full', '@Sanity']
+}, () => {
   test('should have correct window title', {
     tag: ['@CD']
   }, async ({ page }) => {
@@ -15,7 +17,9 @@ test.describe('Homepage Basic Validations', () => {
     await expect(page).toHaveTitle(PAGE_TITLES.HOME);
   });
 
-  test('should have favicon', async ({ page }) => {
+  test('should have favicon', {
+    tag: ['@CD']
+  }, async ({ page }) => {
     const homePage = new HomePage(page);
     await homePage.goto();
     const favicon = page.locator('link[rel="icon"]');
@@ -27,7 +31,9 @@ test.describe('Homepage Basic Validations', () => {
     expect(response?.status()).toBe(200);
   });
 
-  test('should not have console errors', async ({ page }) => {
+  test('should not have console errors', {
+    tag: ['@CD']
+  }, async ({ page }) => {
     const errors: string[] = [];
     page.on('console', msg => {
       if (msg.type() === 'error') errors.push(msg.text());
@@ -38,7 +44,9 @@ test.describe('Homepage Basic Validations', () => {
     expect(errors.length).toBe(0);
   });
 
-  test('should have proper HTTP status and headers', async ({ page }) => {
+  test('should have proper HTTP status and headers', {
+    tag: ['@CD']
+  }, async ({ page }) => {
     const response = await page.goto(URLS.HOME);
     expect(response?.status()).toBe(200);
     const headers = response?.headers();
@@ -67,7 +75,9 @@ test.describe('Homepage Basic Validations', () => {
     expect(failedLinks, `Failed links:\n${JSON.stringify(failedLinks, null, 2)}`).toHaveLength(0);
   });
 
-  test('cookie consent banner functionality', async ({ page }) => {
+  test('cookie consent banner functionality', {
+    tag: ['@CD']
+  }, async ({ page }) => {
     const homePage = new HomePage(page);
     await homePage.goto();
     
