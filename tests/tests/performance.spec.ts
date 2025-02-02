@@ -24,7 +24,9 @@ interface ResourceMetric {
   transferSize: number;
 }
 
-test.describe('Performance Tests', () => {
+test.describe('Performance Tests', {
+  tag: ['@Full', '@Performance']
+}, () => {
   test('Home page performance audit', async ({ page }, testInfo) => {
     const reporter = new PerformanceReporter();
     console.log('Starting performance audit for home page...');
