@@ -4,6 +4,10 @@ export const URLS = {
   LOGIN: process.env.LOGIN_URL || 'https://app.mystories.com/login'
 };
 
+export const PAGE_TITLES = {
+  HOME: 'MyStories - Capture and Treasure the Stories of Your Loved Ones'
+};
+
 export const TEST_USER_DEFAULTS = {
   PURCHASER: {  // For self-purchase and gift giver
     firstName: 'John',
