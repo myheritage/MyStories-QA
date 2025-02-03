@@ -1,168 +1,120 @@
-import { Page, expect } from '@playwright/test';
+import { Page, TestInfo } from '@playwright/test';
+import { VISUAL_CONFIG, VisualTestOptions } from '../data/visual.config';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { VISUAL_CONFIG, VisualTestOptions } from '../data/visual.config';
+import { compareImages } from './ImageComparisonUtil';
+import { ReportGenerator } from './ReportGenerator';
 
 /**
  * Helper class for visual regression testing
- * Handles screenshot comparison, baseline management, and test reporting
+ * Uses ImageComparisonUtil for precise image comparison with detailed reporting
  */
 export class VisualTestHelper {
-  private readonly baselineDir: string;
-  private readonly actualDir: string;
-  private readonly diffDir: string;
+  private readonly reportGenerator: ReportGenerator;
 
   constructor(private readonly config = VISUAL_CONFIG) {
-    this.baselineDir = path.join(process.cwd(), config.baselineDir);
-    this.actualDir = path.join(process.cwd(), 'test-results/visual/actual');
-    this.diffDir = path.join(process.cwd(), 'test-results/visual/diff');
+    // Initialize report generator with visual testing directory
+    const visualTestingDir = path.dirname(this.config.directories.baseline);
+    this.reportGenerator = new ReportGenerator(visualTestingDir);
   }
 
   /**
    * Compare a page's current state with its baseline screenshot
    * @param page Playwright page object
    * @param options Test configuration options
-   * @returns Promise resolving to comparison result
+   * @param testInfo Test information for attaching artifacts to report
    */
-  async compareScreenshot(page: Page, options: VisualTestOptions): Promise<ComparisonResult> {
+  async compareScreenshot(page: Page, options: VisualTestOptions, testInfo: TestInfo): Promise<void> {
     const { name, sensitivity = this.config.sensitivity } = options;
+    
+    // Wait for page to be fully loaded
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(1000); // Give a moment for any post-load animations
     
     // Ensure directories exist
     await this.ensureDirectories();
-
-    // Generate file paths
-    const baselinePath = path.join(this.baselineDir, `${name}.png`);
-    const actualPath = path.join(this.actualDir, `${name}.png`);
-    const diffPath = path.join(this.diffDir, `${name}.png`);
-
-    // Take new screenshot
-    await page.screenshot({
-      path: actualPath,
+    
+    // Generate timestamp for unique filenames
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const baseFileName = `${name}-${timestamp}`;
+    
+    // Define file paths
+    const actualPath = path.join(this.config.directories.actual, `${baseFileName}.png`);
+    const baselinePath = path.join(this.config.directories.baseline, `${name}.png`);
+    const diffPath = path.join(this.config.directories.diff, `${baseFileName}-diff.png`);
+    
+    // Take screenshot and save to actual directory
+    const screenshotBuffer = await page.screenshot({
       fullPage: true,
-      animations: 'disabled',  // Prevent animation frames from affecting comparison
-      scale: 'css'            // Use CSS pixels for consistent sizing
+      animations: 'disabled',
+      scale: 'css'
     });
+    await fs.writeFile(actualPath, screenshotBuffer);
 
-    // Check if baseline exists
-    const hasBaseline = await this.fileExists(baselinePath);
-    
-    // Handle missing baseline
-    if (!hasBaseline) {
-      if (this.config.forceNewBaseline) {
-        await fs.copyFile(actualPath, baselinePath);
-        return {
-          matches: true,
-          baselinePath,
-          actualPath,
-          message: 'Created new baseline'
-        };
-      }
-      throw new Error(
-        `No baseline found for "${name}". Run with FORCE_BASELINE=true to create one.`
+    // If baseline doesn't exist, create it and fail the test
+    if (!(await this.fileExists(baselinePath))) {
+      console.log(`Creating baseline for ${name}`);
+      await fs.writeFile(baselinePath, screenshotBuffer);
+      throw new Error(`Baseline was missing for ${name} and has been created. Please verify the baseline and run the test again.`);
+    }
+
+    try {
+      // Read baseline image for comparison
+      const baselineBuffer = await fs.readFile(baselinePath);
+      
+      // Compare images and get result
+      const { mismatchedPixels, diffImage } = await compareImages(
+        baselineBuffer,
+        screenshotBuffer,
+        sensitivity
       );
-    }
 
-    // Compare images
-    const result = await this.compareImages(baselinePath, actualPath, diffPath, sensitivity);
-    
-    return {
-      ...result,
-      baselinePath,
-      actualPath,
-      diffPath
-    };
-  }
+      // Generate HTML report with all images
+      const reportPath = await this.reportGenerator.generateReport(
+        {
+          name,
+          timestamp: new Date().toISOString(),
+          browser: testInfo.project.name,
+          viewport: await page.viewportSize() || { width: 1280, height: 720 },
+          url: page.url()
+        },
+        {
+          baseline: baselinePath,
+          actual: actualPath,
+          diff: mismatchedPixels > 0 ? diffPath : undefined
+        }
+      );
 
-  /**
-   * Compare two images and generate a diff if they don't match
-   * @param baselinePath Path to baseline image
-   * @param actualPath Path to actual image
-   * @param diffPath Path to save diff image
-   * @param sensitivity Threshold for pixel differences
-   */
-  private async compareImages(
-    baselinePath: string,
-    actualPath: string,
-    diffPath: string,
-    sensitivity: number
-  ): Promise<{ matches: boolean; diffRatio: number; message?: string }> {
-    // Use Playwright's built-in screenshot comparison
-    try {
-      const actualBuffer = await fs.readFile(actualPath);
-      const baselineBuffer = await fs.readFile(baselinePath);
-      
-      await expect(actualBuffer.toString('base64')).toMatchSnapshot(baselineBuffer.toString('base64'), {
-        threshold: sensitivity,
-        maxDiffPixelRatio: sensitivity
+      // Only attach the HTML report to test results
+      await testInfo.attach('Visual Test Report', {
+        path: reportPath,
+        contentType: 'text/html'
       });
 
-      return {
-        matches: true,
-        diffRatio: 0,
-        message: 'Images match'
-      };
-    } catch (error) {
-      // Generate visual diff using Playwright's comparison
-      const comparison = await this.generateDiff(baselinePath, actualPath, diffPath);
-      
-      return {
-        matches: false,
-        diffRatio: comparison.diffRatio,
-        message: `Images differ by ${(comparison.diffRatio * 100).toFixed(2)}% of pixels`
-      };
-    }
-  }
-
-  /**
-   * Generate a visual diff between two images
-   * @param baselinePath Path to baseline image
-   * @param actualPath Path to actual image
-   * @param diffPath Path to save diff image
-   */
-  private async generateDiff(
-    baselinePath: string,
-    actualPath: string,
-    diffPath: string
-  ): Promise<{ diffRatio: number }> {
-    // Use Playwright's comparison utilities to generate diff
-    try {
-      const actualBuffer = await fs.readFile(actualPath);
-      const baselineBuffer = await fs.readFile(baselinePath);
-      
-      await expect(actualBuffer.toString('base64')).toMatchSnapshot(baselineBuffer.toString('base64'), {
-        threshold: 0,  // Use exact comparison for diff generation
-        maxDiffPixels: 0,
-        maxDiffPixelRatio: 0
-      });
-      
-      return { diffRatio: 0 };
-    } catch (error: unknown) {
-      const diffRatio = error instanceof Error && 'diffRatio' in error 
-        ? (error as { diffRatio: number }).diffRatio 
-        : 1;
-      
-      // If error contains diff image data, save it
-      if (error instanceof Error && 'diff' in error) {
-        const diffBuffer = (error as { diff: Buffer }).diff;
-        await fs.writeFile(diffPath, diffBuffer);
+      if (mismatchedPixels > 0) {
+        // Save diff image if there are differences
+        if (diffImage) {
+          await fs.writeFile(diffPath, diffImage);
+        }
+        throw new Error(`Visual comparison failed for ${name}: ${mismatchedPixels} pixels differed. See report at: ${reportPath}`);
       }
-      
-      return { diffRatio };
+
+      console.log(`Visual test passed for ${name}`);
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`Unexpected error during visual comparison: ${error}`);
     }
   }
 
-  /**
-   * Ensure required directories exist
-   */
   private async ensureDirectories(): Promise<void> {
-    await fs.mkdir(this.baselineDir, { recursive: true });
-    await fs.mkdir(this.actualDir, { recursive: true });
-    await fs.mkdir(this.diffDir, { recursive: true });
+    const dirs = Object.values(this.config.directories);
+    for (const dir of dirs) {
+      await fs.mkdir(dir, { recursive: true });
+    }
   }
 
-  /**
-   * Check if a file exists
-   */
   private async fileExists(filePath: string): Promise<boolean> {
     try {
       await fs.access(filePath);
@@ -171,16 +123,4 @@ export class VisualTestHelper {
       return false;
     }
   }
-}
-
-/**
- * Interface for screenshot comparison results
- */
-interface ComparisonResult {
-  matches: boolean;
-  diffRatio?: number;
-  message?: string;
-  baselinePath: string;
-  actualPath: string;
-  diffPath?: string;
 }

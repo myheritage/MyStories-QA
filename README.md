@@ -1,63 +1,57 @@
 # MyStories Test Automation
 
-Automated testing suite for MyStories web application using Playwright and TypeScript.
+Comprehensive automated testing suite for MyStories web application using Playwright and TypeScript. This project provides extensive test coverage including visual regression, security, performance, and email testing capabilities.
 
-## Features
+## Features & Test Categories
 
-- Page Object Model design pattern
-- TypeScript for type safety
-- Centralized configuration
-- Visual regression testing
-- Security testing and compliance
-- Performance monitoring
-- Link validation
-- Price verification
-- Cookie consent handling
-- Email verification
-- Promo code testing
+### Core Test Suites
+- **Homepage Tests**: Navigation, content verification, responsive design
+- **Self-Order Flow**: Complete purchase journey validation
+- **Gift Order Flow**: Gift purchase and recipient notification flow
+- **Cookie Consent**: Compliance and persistence testing
+- **Question Flow**: Form validation and submission testing
 
-## Test Scenarios
+### Advanced Testing Capabilities
+- **Visual Regression Testing** (@Visual)
+  - Pixel-by-pixel comparison
+  - HTML reports with side-by-side diffs
+  - Configurable baseline management
+  - Support for multiple viewports
 
-1. Self Order Flow
-   - Complete order with successful payment
-   - Order with denied cookies
-   - Handle declined payment
-   - Apply promotion code
+- **Security Testing** (@Security)
+  - XSS prevention (script/event/HTML injection)
+  - Payment security (price tampering, promo codes)
+  - Privacy compliance (GDPR, cookie consent)
+  - Input validation and sanitization
 
-2. Gift Order Flow
-   - Complete gift order with email verification
-   - Schedule future gift delivery
-   - Gift order with custom message
-   - Gift order with multiple copies
+- **Performance Testing** (@Performance)
+  - Desktop & Mobile metrics tracking
+  - Customizable thresholds
+  - Comprehensive timing metrics
+  - Resource usage monitoring
 
-3. Visual Regression Tests
-   - Core page layouts
-   - Order flow states
-   - Email templates
-   - Responsive design checks
+- **Email Testing**
+  - Real email testing (MailSlurp)
+  - Development mode (fake emails)
+  - Local testing (hardcoded addresses)
 
-4. Security Tests
-   - Input validation and sanitization
-   - Payment form security
-   - Privacy compliance
-   - Cookie consent compliance
+## Installation & Setup
 
-5. Performance Tests
-   - Page load times
-   - API response times
-   - Resource optimization
-   - Core Web Vitals
+### Prerequisites
+- Node.js ≥ 18
+- npm ≥ 9
+- Chrome/Chromium browser
 
-## Setup
-
-1. Install dependencies:
+### Quick Start
+1. Clone and install dependencies:
 ```bash
 npm install
 ```
 
-2. Copy environment example and configure:
+2. Set up environment configuration:
 ```bash
 cp .env.example .env
+# Edit .env with your settings
 ```
 
 3. Install Playwright browsers:
@@ -65,114 +59,211 @@ cp .env.example .env
 npx playwright install
 ```
 
+## Configuration
+
+### Environment Variables (.env)
+Key configurations:
+
+```bash
+# Email Testing Mode
+EMAIL_MODE=fake|mailslurp|hardcoded
+MAILSLURP_API_KEY=your-key  # For mailslurp mode
+
+# Test Environment
+TEST_ENVIRONMENT=sandbox
+SANDBOX_URL=https://app.mystories.com/order?coupon=testmode
+STRIPE_SANDBOX=true
+
+# Browser Settings
+BROWSER=chromium
+HEADLESS=true
+SLOW_MO=0  # Milliseconds between actions
+
+# Timeouts (ms)
+DEFAULT_TIMEOUT=30000    # Global timeout
+EXPECT_TIMEOUT=5000      # Assertion timeout
+```
+
+### Performance Thresholds
+Desktop metrics:
+- First Paint: < 1.8s
+- First Contentful Paint: < 2.0s
+- Largest Contentful Paint: < 2.5s
+- DOM Content Loaded: < 2.5s
+- Load Complete: < 3.0s
+
+Mobile metrics:
+- First Paint: < 2.0s
+- First Contentful Paint: < 2.2s
+- Largest Contentful Paint: < 2.7s
+- DOM Content Loaded: < 2.7s
+- Load Complete: < 3.5s
+
 ## Running Tests
 
-Run all tests:
+### Available Scripts
 ```bash
+# Run all tests
 npm test
+
+# UI mode for debugging
+npm run test:ui
+
+# Debug mode
+npm run test:debug
+
+# Headed mode (non-headless)
+npm run test:headed
+
+# Specific flows
+npm run test:self    # Self-order flow
+npm run test:gift    # Gift order flow
+
+# View test report
+npm run show-report
+
+# Generate test code
+npm run codegen
 ```
 
-Run specific test file:
-```bash
-npx playwright test tests/tests/selfOrder.spec.ts
-```
+### Running Specific Test Categories
 
-Run in UI mode:
 ```bash
-npx playwright test --ui
-```
-
-Run specific test types:
-```bash
-# Visual tests
+# Visual Tests
 npx playwright test tests/tests/visual.spec.ts
+FORCE_BASELINE=true npx playwright test tests/tests/visual.spec.ts  # Update baseline
 
-# Security tests
-npx playwright test tests/tests/security/
+# Security Tests
+npx playwright test tests/tests/security/  # All security tests
+npx playwright test tests/tests/security/input.spec.ts  # Specific suite
 
-# Performance tests
+# Performance Tests
 npx playwright test tests/tests/performance.spec.ts
+
+# Email Tests
+npx playwright test tests/tests/emails.spec.ts
 ```
 
 ## Project Structure
 
 ```
 ├── tests/
-│   ├── data/           # Test data and configurations
-│   │   ├── cookies.config.ts    # Cookie testing settings
+│   ├── data/           # Test configurations
+│   │   ├── cookies.config.ts    # Cookie settings
 │   │   ├── performance.config.ts # Performance thresholds
-│   │   ├── security.config.ts   # Security testing rules
-│   │   ├── test.config.ts      # General test configuration
-│   │   └── visual.config.ts    # Visual testing settings
-│   ├── debug/          # Debug test files
-│   ├── helpers/        # Helper functions and utilities
-│   │   ├── EmailHandler.ts     # Email testing utilities
-│   │   ├── LinkCheckerHelper.ts # Link validation
-│   │   ├── PerformanceReporter.ts # Performance metrics
-│   │   ├── SecurityHelper.ts   # Security testing utilities
-│   │   ├── VisualTestHelper.ts # Visual comparison tools
-│   │   └── ...
+│   │   ├── security.config.ts   # Security rules
+│   │   ├── test.config.ts      # General config
+│   │   └── visual.config.ts    # Visual test settings
+│   │
+│   ├── helpers/        # Utility functions
+│   │   ├── CookieConsentHandler.ts  # Cookie management
+│   │   ├── EmailHandler.ts     # Email testing
+│   │   ├── ImageComparisonUtil.ts # Visual diff
+│   │   ├── LinkCheckerHelper.ts  # Link validation
+│   │   ├── PerformanceReporter.ts # Metrics
+│   │   ├── ReportGenerator.ts    # HTML reports
+│   │   ├── SecurityHelper.ts    # Security utils
+│   │   ├── TestDataGenerator.ts # Test data
+│   │   └── VisualTestHelper.ts  # Visual testing
+│   │
 │   ├── pages/         # Page Object Models
-│   └── tests/         # Test scenarios
-│       ├── security/  # Security test suites
-│       └── ...       # Other test suites
-├── playwright.config.ts
-└── package.json
+│   │   ├── BasePage.ts
+│   │   ├── HomePage.ts
+│   │   ├── OrderPage.ts
+│   │   ├── PaymentPage.ts
+│   │   ├── QuestionsPage.ts
+│   │   ├── SettingsPage.ts
+│   │   └── StoryDetailsPage.ts
+│   │
+│   └── tests/         # Test suites
+│       ├── cookies.spec.ts
+│       ├── emails.spec.ts
+│       ├── giftOrder.spec.ts
+│       ├── homepage.spec.ts
+│       ├── performance.spec.ts
+│       ├── questions.spec.ts
+│       ├── selfOrder.spec.ts
+│       ├── visual.spec.ts
+│       └── security/
+│           ├── input.spec.ts
+│           ├── payment.spec.ts
+│           └── privacy.spec.ts
 ```
 
-## Visual Testing
+## Debug & Development
 
-The visual testing infrastructure allows for:
-- Pixel-by-pixel comparison with baseline images
-- Configurable threshold for differences
-- Responsive design validation
-- Email template verification
+### UI Mode
+```bash
+npm run test:ui
+```
+- Interactive test runner
+- Step-by-step execution
+- Real-time browser state
+- Network request inspection
 
-Configure visual testing in `tests/data/visual.config.ts`:
-- Set sensitivity threshold
-- Choose pages to test
-- Define email templates to verify
+### Debug Mode
+```bash
+npm run test:debug
+```
+- Breakpoint support
+- Console logging
+- Network monitoring
+- Step debugging
 
-## Security Testing
+### Test Generation
+```bash
+npm run codegen
+```
+- Record and generate tests
+- Interactive selector picking
+- Automatic code generation
+- Support for multiple browsers
 
-Security tests cover:
-- Input validation and sanitization
-- Payment form security
-- Privacy compliance
-- Cookie consent handling
+## Best Practices
 
-Configure security tests in `tests/data/security.config.ts`:
-- Define security rules
-- Set compliance requirements
-- Configure test parameters
+1. **Test Organization**
+   - Use page objects for UI interactions
+   - Group related tests in spec files
+   - Maintain test data in config files
 
-## Performance Testing
+2. **Visual Testing**
+   - Review baselines before committing
+   - Use appropriate viewport sizes
+   - Document visual changes
 
-Performance monitoring includes:
-- Page load metrics
-- API response times
-- Resource loading
-- Core Web Vitals
+3. **Performance Testing**
+   - Run tests on consistent environments
+   - Monitor trends over time
+   - Adjust thresholds as needed
 
-Configure performance tests in `tests/data/performance.config.ts`:
-- Set performance budgets
-- Define thresholds
-- Configure monitoring parameters
+4. **Security Testing**
+   - Regular dependency updates
+   - Comprehensive input validation
+   - Environment-specific configurations
 
-## CI/CD Integration
+## Common Issues & Solutions
 
-This project includes GitHub Actions workflows for automated testing:
-- Runs on push to main branch
-- Runs on pull requests
-- Can be triggered manually
-- Generates and uploads test reports
+1. **Visual Test Failures**
+   - Check for dynamic content
+   - Verify viewport sizes
+   - Review recent UI changes
+
+2. **Performance Failures**
+   - Check system resources
+   - Verify network conditions
+   - Review recent code changes
+
+3. **Email Test Issues**
+   - Verify API keys
+   - Check email mode configuration
+   - Review spam filters
 
 ## Contributing
 
-1. Create a new branch for your feature
-2. Make your changes
-3. Run tests to ensure nothing is broken
-4. Submit a pull request
+1. Create feature branch
+2. Run tests locally
+3. Update documentation
+4. Submit pull request
 
 ## License
 

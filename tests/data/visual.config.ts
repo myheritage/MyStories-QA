@@ -4,9 +4,15 @@
  * and defines global settings for screenshot comparison
  */
 export const VISUAL_CONFIG = {
-  // Directory where baseline screenshots are stored
-  // These serve as the "expected" state for visual comparison
-  baselineDir: 'visual-baselines',
+  // Directories for visual testing artifacts
+  directories: {
+    // Directory for approved baseline screenshots
+    baseline: 'visual-testing/baseline',
+    // Directory for current test run screenshots
+    actual: 'visual-testing/actual',
+    // Directory for difference images
+    diff: 'visual-testing/diff'
+  },
 
   // Threshold for pixel difference (0-1)
   // - 0: Requires exact pixel match
@@ -17,7 +23,7 @@ export const VISUAL_CONFIG = {
   // Force creation of new baseline screenshots
   // Set via environment variable: FORCE_BASELINE=true
   // Useful when intentionally updating the expected visual state
-  forceNewBaseline: process.env.FORCE_BASELINE === 'true',
+  forceNewBaseline: process.env.FORCE_BASELINE === 'false',
 
   /**
    * Pages to include in visual testing

@@ -1,14 +1,18 @@
-# Playwright
+# Dependencies
 node_modules/
+package-lock.json
+
+# Environment
+.env
+
+# Test results
 test-results/
 playwright-report/
-blob-report/
-playwright/.cache/
 
-# Environment variables
-.env
-.env.*
-!.env.example
+# Visual testing artifacts
+visual-testing/actual/
+visual-testing/diff/
+visual-testing/reports/
 
 # IDE
 .vscode/
@@ -18,16 +22,3 @@ playwright/.cache/
 # OS
 .DS_Store
 Thumbs.db
-
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Coverage
-coverage/
-
-# Build
-dist/
-build/
