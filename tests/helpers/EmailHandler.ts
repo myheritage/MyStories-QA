@@ -2,6 +2,7 @@ import { MailSlurp, Email as MailSlurpEmail } from 'mailslurp-client';
 import { Browser, Page, TestInfo, expect } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import * as fsSync from 'fs';
 import { TestDataGenerator, StoryTellerDetails } from './TestDataGenerator';
 import { QuestionsPage } from '../pages/QuestionsPage';
 import { SettingsPage } from '../pages/SettingsPage';
@@ -31,12 +32,12 @@ interface EmailConfig {
     recipient?: string;       // For gift recipient (in gift flow)
   };
   testDataGenerator?: TestDataGenerator;  // Required for GENERATED mode
-  isSandboxMode?: boolean;    // Optional: Skip welcome emails in sandbox mode
+  isSandboxMode?: boolean;    // Optional: Used for weekly question email intervals
 }
 
 enum EmailType {
   WELCOME = 'welcome',
-  GIFT_ACTIVATION = 'gift_activation',
+  GIFT_RECEIVE = 'gift_receive',
   GIFT_OPENED = 'gift_opened',
   WEEKLY_QUESTION = 'weekly_question',
   LOGIN = 'login'
@@ -50,18 +51,23 @@ export class EmailHandler {
   private hardcodedEmails?: { purchaser: string; recipient?: string };
   private testDataGenerator?: TestDataGenerator;
   private isSandboxMode: boolean = false;
-
   constructor(config: EmailConfig, browser?: Browser) {
     console.log('\n=== Initializing EmailHandler ===');
     
-    // Handle sandbox mode
+    // Set email mode and sandbox mode
+    this.mode = config.mode;
     this.isSandboxMode = config.isSandboxMode || false;
     if (this.isSandboxMode) {
-      console.log('🏦 Sandbox mode enabled - welcome emails will be skipped');
+      console.log('🏦 Sandbox mode enabled - affects weekly question email intervals');
     }
-
-    // Set email mode and validate configuration
-    this.mode = config.mode;
+    
+    // For email tests (emails.spec.ts), always use MailSlurp if mode is fake
+    const isEmailTest = process.env.TEST_FILE?.includes('emails.spec.ts');
+    if (this.mode === EmailMode.FAKE && isEmailTest) {
+      console.log('📧 Email test detected - using MailSlurp for fake mode');
+      this.mode = EmailMode.MAILSLURP;
+    }
+    
     console.log(`📧 Email mode: ${this.mode}`);
 
     switch (this.mode) {
@@ -242,56 +248,50 @@ export class EmailHandler {
 
     return this.retryOperation(
       async () => {
-        const email = await this.client!.waitForLatestEmail(
-          inboxId,
-          options.timeout || EMAIL_CONFIG.TIMEOUTS.DEFAULT_WAIT
-        );
+        try {
+          const email = await this.client!.waitForLatestEmail(
+            inboxId,
+            30000  // Short timeout per attempt
+          );
 
-        if (options.subject && email.subject !== options.subject) {
-          throw new Error(`Expected subject "${options.subject}" but got "${email.subject}"`);
+          // Check subject and sender before proceeding
+          if (options.subject && email.subject !== options.subject) {
+            throw new Error(`Expected subject "${options.subject}" but got "${email.subject}"`);
+          }
+          if (options.from && email.from !== options.from) {
+            throw new Error(`Expected sender "${options.from}" but got "${email.from}"`);
+          }
+
+          const fullEmail = await this.client!.emailController.getEmail({ emailId: email.id });
+
+          console.log('📨 Email received:', {
+            id: email.id,
+            subject: email.subject,
+            from: email.from,
+            timestamp: email.createdAt
+          });
+
+          return {
+            id: email.id,
+            subject: email.subject || '',
+            body: fullEmail.body || '',
+            html: typeof fullEmail.html === 'string' ? fullEmail.html : undefined,
+            from: email.from || '',
+            to: email.to || [],
+            timestamp: new Date(email.createdAt || Date.now())
+          };
+        } catch (error) {
+          // Force retry by throwing error with clear message
+          throw new Error('Email not found or did not match criteria');
         }
-
-        if (options.from && email.from !== options.from) {
-          throw new Error(`Expected sender "${options.from}" but got "${email.from}"`);
-        }
-
-        const fullEmail = await this.client!.emailController.getEmail({ emailId: email.id });
-
-        console.log('📨 Email received:', {
-          id: email.id,
-          subject: email.subject,
-          from: email.from,
-          timestamp: email.createdAt
-        });
-
-        return {
-          id: email.id,
-          subject: email.subject || '',
-          body: fullEmail.body || '',
-          html: typeof fullEmail.html === 'string' ? fullEmail.html : undefined,
-          from: email.from || '',
-          to: email.to || [],
-          timestamp: new Date(email.createdAt || Date.now())
-        };
       },
-      `Waiting for email${options.subject ? ` with subject "${options.subject}"` : ''}`
+      `Waiting for email${options.subject ? ` with subject "${options.subject}"` : ''}`,
+      EMAIL_CONFIG.TIMEOUTS.MAX_RETRIES,
+      EMAIL_CONFIG.TIMEOUTS.POLL_INTERVAL
     );
   }
 
   async waitForWelcomeEmail(email: string): Promise<Email> {
-    if (this.isSandboxMode) {
-      console.log('\n🏦 Sandbox mode active - skipping welcome email check');
-      return {
-        id: 'sandbox-mock-email',
-        subject: EMAIL_CONFIG.SUBJECTS.WELCOME,
-        from: EMAIL_CONFIG.SENDERS.STORIES,
-        to: [email],
-        body: 'Mock welcome email (sandbox mode)',
-        html: '<div>Mock welcome email (sandbox mode)</div>',
-        timestamp: new Date()
-      };
-    }
-
     console.log(`\n👋 Waiting for welcome email to: ${email}`);
     return this.waitForEmail(await this.getInboxId(email), {
       subject: EMAIL_CONFIG.SUBJECTS.WELCOME,
@@ -307,12 +307,12 @@ export class EmailHandler {
     });
   }
 
-  async waitForGiftActivationEmail(email: string, params: {
+  async waitForGiftReceiveEmail(email: string, params: {
     giverFirstName: string;
     receiverFirstName: string;
   }): Promise<Email> {
-    console.log(`\n🎁 Waiting for gift activation email to: ${email}`);
-    const subject = this.formatSubject(EMAIL_CONFIG.SUBJECTS.GIFT_ACTIVATION, params);
+    console.log(`\n🎁 Waiting for gift receive email to: ${email}`);
+    const subject = this.formatSubject(EMAIL_CONFIG.SUBJECTS.GIFT_RECEIVE, params);
     return this.waitForEmail(await this.getInboxId(email, true), {
       subject,
       from: EMAIL_CONFIG.SENDERS.STORIES,
@@ -333,8 +333,9 @@ export class EmailHandler {
     testMode?: boolean;
   }): Promise<Email> {
     console.log(`\n❓ Handling weekly question email for: ${email}`);
-    if (!params.testMode) {
-      console.log('❓ Test mode disabled - returning mock email\n');
+    if (!params.testMode || this.isSandboxMode) {
+      const reason = this.isSandboxMode ? 'sandbox mode' : 'test mode disabled';
+      console.log(`❓ Using mock email (${reason})\n`);
       return {
         id: 'mock-weekly-question',
         subject: `${params.firstName}, What is your earliest childhood memory?`,
@@ -389,9 +390,14 @@ export class EmailHandler {
     return this.extractLinkByButtonText(email, 'Log in to MyStories');
   }
 
+  async extractWelcomeLink(email: Email): Promise<string> {
+    console.log('\n👋 Extracting welcome link');
+    return this.extractLinkByButtonText(email, 'Visit MyStories');
+  }
+
   async extractActivationLink(email: Email): Promise<string> {
     console.log('\n✨ Extracting activation link');
-    return this.extractLinkByButtonText(email, 'Activate');
+    return this.extractLinkByButtonText(email, 'Get started');
   }
 
   async extractQuestionLink(email: Email): Promise<string> {
@@ -463,14 +469,17 @@ export class EmailHandler {
     // Find links by button text
     const links: { [key: string]: string } = {};
 
-    // Login link - "Log in to MyStories" button
+    // Welcome/Login links
+    const welcomeButton = emailContent.body?.match(/<a[^>]+href="([^"]+)"[^>]*>.*?Visit MyStories.*?<\/a>/i);
     const loginButton = emailContent.body?.match(/<a[^>]+href="([^"]+)"[^>]*>.*?Log in to MyStories.*?<\/a>/i);
-    if (loginButton) {
+    if (welcomeButton) {
+      links.login = welcomeButton[1];  // Use login key for both welcome and login links
+    } else if (loginButton) {
       links.login = loginButton[1];
     }
 
-    // Activation link - "Activate" button
-    const activateButton = emailContent.body?.match(/<a[^>]+href="([^"]+)"[^>]*>.*?Activate.*?<\/a>/i);
+    // Activation link - "Get started" button
+    const activateButton = emailContent.body?.match(/<a[^>]+href="([^"]+)"[^>]*>.*?Get started.*?<\/a>/i);
     if (activateButton) {
       links.activation = activateButton[1];
     }
@@ -561,5 +570,54 @@ export class EmailHandler {
     await settingsPage.verifyUserEmail(userDetails.email);
     
     console.log('🔑 Login verification completed\n');
+  }
+
+  /**
+   * Reply to an email with optional attachments
+   * Sends a reply to the original sender using the same subject line.
+   * 
+   * @param email The email to reply to
+   * @param answer The reply text content
+   * @param attachments Optional array of file paths to attach (images only)
+   * @throws Error if email not found or sending fails
+   */
+  async replyToEmail(email: Email, answer: string, attachments?: string[]): Promise<void> {
+    console.log('Replying to email:', email.subject);
+    console.log('Answer:', answer);
+    
+    await this.ensureClient();
+    const inboxId = await this.getInboxId(email.to[0]);
+    
+    // Send reply with same subject
+    await this.client!.sendEmail(inboxId, {
+      to: [email.from],
+      subject: email.subject,  // Keep original subject
+      body: answer,
+      attachments
+    });
+    
+    console.log('Reply sent');
+  }
+
+  async verifyWelcomeProcess(page: Page, userDetails: StoryTellerDetails, testInfo: TestInfo) {
+    console.log('\n👋 Starting welcome verification process');
+    
+    const welcomeEmail = await this.waitForWelcomeEmail(userDetails.email);
+    await this.verifyEmailContent(welcomeEmail, testInfo, {
+      expectedSubject: EMAIL_CONFIG.SUBJECTS.WELCOME,
+      expectedSender: EMAIL_CONFIG.SENDERS.STORIES,
+      requiredLinks: ['login']
+    });
+
+    const welcomeLink = await this.extractWelcomeLink(welcomeEmail);
+    await page.goto(welcomeLink);
+    
+    const questionsPage = new QuestionsPage(page);
+    const settingsPage = new SettingsPage(page);
+    
+    await questionsPage.waitForDashboard();
+    await settingsPage.verifyUserEmail(userDetails.email);
+    
+    console.log('👋 Welcome verification completed\n');
   }
 }

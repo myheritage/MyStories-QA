@@ -5,6 +5,7 @@ import { OrderPage } from '../pages/OrderPage';
 import { StoryDetailsPage } from '../pages/StoryDetailsPage';
 import { PaymentPage, stripeTestCards } from '../pages/PaymentPage';
 import { QuestionsPage } from '../pages/QuestionsPage';
+import { GiftActivationPage } from '../pages/GiftActivationPage';
 import { TestDataGenerator } from '../helpers/TestDataGenerator';
 import { CookieConsentOption } from '../pages/BasePage';
 import { EmailHandler, Email, EmailMode } from '../helpers/EmailHandler';
@@ -36,7 +37,7 @@ test.describe('Self Purchase Emails', {
     testData = new TestDataGenerator();
   });
 
-  test('verify welcome email in production mode', async ({ page, emailHandler }, testInfo) => {
+  test('verify welcome email', async ({ page, emailHandler }, testInfo) => {
     // Create test user with MailSlurp inbox (US for state selection)
     const { storyteller: userDetails } = await testData.createTestUser(emailHandler, {
       withState: true  // This will use US country with state
@@ -46,12 +47,8 @@ test.describe('Self Purchase Emails', {
     // Complete purchase flow
     await TestFlowHelper.completeOrderFlow(page, userDetails);
 
-    // Verify welcome email
-    const welcomeEmail = await emailHandler.waitForWelcomeEmail(userDetails.email);
-    await emailHandler.verifyEmailContent(welcomeEmail, testInfo, {
-      expectedSubject: EMAIL_CONFIG.SUBJECTS.WELCOME,
-      expectedSender: EMAIL_CONFIG.SENDERS.STORIES
-    });
+    // Verify welcome email and login link
+    await emailHandler.verifyWelcomeProcess(page, userDetails, testInfo);
   });
 
   test('verify login email', async ({ page, emailHandler }, testInfo) => {
@@ -74,15 +71,7 @@ test.describe('Self Purchase Emails', {
     await homePage.startLoginFlow();
     await homePage.requestLoginLink(userDetails.email);
 
-    // Get and verify login email
-    const loginEmail = await emailHandler.waitForLoginEmail(userDetails.email);
-    await emailHandler.verifyEmailContent(loginEmail, testInfo, {
-      expectedSubject: EMAIL_CONFIG.SUBJECTS.LOGIN,
-      expectedSender: EMAIL_CONFIG.SENDERS.STORIES,
-      requiredLinks: ['login']
-    });
-
-    // Complete login verification
+    // Verify login email and process
     await emailHandler.verifyLoginProcess(page, userDetails, testInfo);
   });
 });
@@ -96,10 +85,11 @@ test.describe('Gift Flow Emails', {
     testData = new TestDataGenerator();
   });
 
-  test('verify gift activation email', async ({ page, emailHandler }, testInfo) => {
+  test('verify gift flow emails', async ({ page, emailHandler }, testInfo) => {
     // Create test users with MailSlurp inboxes
     const { storyteller, giftGiver } = await testData.createTestUser(emailHandler, {
-      isGiftFlow: true
+      isGiftFlow: true,
+      withState: true  // Ensure US users get a state
     });
     if (!giftGiver) throw new Error('Gift giver details required for gift flow');
     console.log('Created test users:', { storyteller, giftGiver });
@@ -107,57 +97,78 @@ test.describe('Gift Flow Emails', {
     // Complete gift purchase flow
     await TestFlowHelper.completeGiftOrderFlow(page, storyteller, giftGiver);
 
-    // Verify gift activation email
-    const activationEmail = await emailHandler.waitForGiftActivationEmail(storyteller.email, {
+    // 1. Verify gift receive email (sent to storyteller)
+    const receiveEmail = await emailHandler.waitForGiftReceiveEmail(storyteller.email, {
       giverFirstName: giftGiver.firstName,
       receiverFirstName: storyteller.firstName
     });
-
-    await emailHandler.verifyEmailContent(activationEmail, testInfo, {
+    await emailHandler.verifyEmailContent(receiveEmail, testInfo, {
       expectedSender: EMAIL_CONFIG.SENDERS.STORIES,
       requiredLinks: ['activation']
     });
 
-    // Extract and verify activation link
-    const activationLink = await emailHandler.extractActivationLink(activationEmail);
+    // Extract and click activation link
+    const activationLink = await emailHandler.extractActivationLink(receiveEmail);
     expect(activationLink).toMatch(/^https:\/\/e\.customeriomail\.com\//);
-    console.log('Activation link verified');
-  });
-
-  test('verify gift opened notification', async ({ page, emailHandler }, testInfo) => {
-    // Create test users with MailSlurp inboxes
-    const { storyteller, giftGiver } = await testData.createTestUser(emailHandler, {
-      isGiftFlow: true
-    });
-    if (!giftGiver) throw new Error('Gift giver details required for gift flow');
-    console.log('Created test users:', { storyteller, giftGiver });
-
-    // Complete gift purchase flow
-    await TestFlowHelper.completeGiftOrderFlow(page, storyteller, giftGiver);
-
-    // Get activation email and use link
-    const activationEmail = await emailHandler.waitForGiftActivationEmail(storyteller.email, {
-      giverFirstName: giftGiver.firstName,
-      receiverFirstName: storyteller.firstName
-    });
-    const activationLink = await emailHandler.extractActivationLink(activationEmail);
+    console.log('Clicking activation link');
     await page.goto(activationLink);
 
-    // Verify gift opened notification
+    // Complete activation
+    const activationPage = new GiftActivationPage(page);
+    await activationPage.verifyPrefilledDetails(storyteller);
+    await activationPage.completeActivation();
+
+    // Verify successful activation by checking email in settings
+    const settingsPage = new SettingsPage(page);
+    await settingsPage.verifyUserEmail(storyteller.email);
+
+    // Verify gift opened notification sent to gift giver
     const openedEmail = await emailHandler.waitForGiftOpenedEmail(giftGiver.email);
     await emailHandler.verifyEmailContent(openedEmail, testInfo, {
       expectedSubject: EMAIL_CONFIG.SUBJECTS.GIFT_OPENED,
       expectedSender: EMAIL_CONFIG.SENDERS.STORIES
     });
   });
+});
 
-  test('verify weekly question email', async ({ page, emailHandler }, testInfo) => {
+/**
+ * Weekly Question Email Tests
+ * 
+ * These tests verify the weekly question email flow:
+ * 1. Receiving weekly question emails
+ * 2. Clicking answer link to answer on website
+ * 3. Replying directly via email
+ * 4. Answer verification on website
+ * 
+ * Features tested:
+ * - Email delivery and content verification
+ * - Web-based answering through question link
+ * - Email-based answering through reply
+ * - Answer synchronization between email and web
+ * - Photo attachments (coming soon)
+ */
+test.describe('Weekly Question Emails', {
+  tag: ['@Emails']
+}, () => {
+  let testData: TestDataGenerator;
+
+  test.beforeEach(() => {
+    testData = new TestDataGenerator();
+  });
+
+  test('verify weekly question email', {
+    tag: ['@WIP']
+  }, async ({ page, emailHandler }, testInfo) => {
     // Create test user with MailSlurp inbox
-    const { storyteller: userDetails } = await testData.createTestUser(emailHandler);
+    const { storyteller: userDetails } = await testData.createTestUser(emailHandler, {
+      withState: true  // Add this to match other tests
+    });
     console.log('Created test user:', userDetails);
 
-    // Complete purchase flow
+    // Complete purchase flow and verify login
     await TestFlowHelper.completeOrderFlow(page, userDetails);
+    const settingsPage = new SettingsPage(page);
+    await settingsPage.verifyUserEmail(userDetails.email);
 
     // Get weekly question email (in test mode)
     const questionEmail = await emailHandler.waitForWeeklyQuestionEmail(userDetails.email, {
@@ -176,9 +187,57 @@ test.describe('Gift Flow Emails', {
       requiredLinks: ['question']
     });
 
-    // Extract and verify question link
+    // Click question link and verify it works
     const questionLink = await emailHandler.extractQuestionLink(questionEmail);
-    expect(questionLink).toMatch(/^https:\/\/e\.customeriomail\.com\//);
-    console.log('Question link verified');
+    console.log('Clicking question link');
+    await page.goto(questionLink);
+    
+    // Verify we're on the question page
+    const questionsPage = new QuestionsPage(page);
+    await questionsPage.waitForDashboard();
+  });
+
+  test('verify weekly question email reply', {
+    tag: ['@WIP']
+  }, async ({ page, emailHandler }, testInfo) => {
+    // Create test user with MailSlurp inbox
+    const { storyteller: userDetails } = await testData.createTestUser(emailHandler, {
+      withState: true
+    });
+    console.log('Created test user:', userDetails);
+
+    // Complete purchase flow and verify login
+    await TestFlowHelper.completeOrderFlow(page, userDetails);
+    const settingsPage = new SettingsPage(page);
+    await settingsPage.verifyUserEmail(userDetails.email);
+
+    // Get weekly question email
+    const questionEmail = await emailHandler.waitForWeeklyQuestionEmail(userDetails.email, {
+      firstName: userDetails.firstName,
+      testMode: true
+    });
+
+    // Extract question from subject
+    const match = questionEmail.subject.match(/^[^,]+, (.+)$/);
+    const question = match ? match[1] : '';
+    console.log('Received weekly question:', question);
+
+    // Reply to email with answer
+    const answer = "Here's my answer to the weekly question!";
+    await emailHandler.replyToEmail(questionEmail, answer);
+
+    // Wait for answer to appear on website (30 sec with 3 retries)
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const questionsPage = new QuestionsPage(page);
+        await questionsPage.waitForDashboard();
+        await questionsPage.verifyAnswerText(question, answer);
+        break;
+      } catch (error) {
+        if (attempt === 3) throw error;
+        console.log(`Attempt ${attempt} failed, retrying in 30 seconds...`);
+        await page.waitForTimeout(30000);
+      }
+    }
   });
 });

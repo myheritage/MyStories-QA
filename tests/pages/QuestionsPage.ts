@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { ScreenshotHelper } from '../helpers/ScreenshotHelper';
 
@@ -218,5 +218,38 @@ export class QuestionsPage extends BasePage {
     console.log('Verifying logged in as:', firstName);
     await this.myStoriesHeading.waitFor({ state: 'visible' });
     await this.page.getByText(firstName).waitFor({ state: 'visible' });
+  }
+
+  /**
+   * Verify the answer text for a specific question
+   * Finds the question by its text and verifies its answer matches the expected text.
+   * 
+   * @param question The question text to find
+   * @param expectedAnswer The expected answer text
+   * @throws Error if question not found or answer doesn't match
+   * @example
+   * ```typescript
+   * await questionsPage.verifyAnswerText(
+   *   "What is your earliest childhood memory?",
+   *   "I remember playing in the garden..."
+   * );
+   * ```
+   */
+  async verifyAnswerText(question: string, expectedAnswer: string): Promise<void> {
+    console.log('Verifying answer for question:', question);
+    
+    // Wait for the question to be visible
+    const questionTitle = this.page.locator('.title', { hasText: question });
+    await questionTitle.waitFor({ state: 'visible' });
+
+    // Find the answer text within the question's container
+    const answerText = await this.page
+      .locator(`div:has(> .title:has-text("${question}"))`)
+      .locator('[data-slate-node="element"]')
+      .textContent();
+
+    // Verify the answer matches
+    expect(answerText?.trim()).toBe(expectedAnswer.trim());
+    console.log('Answer verified');
   }
 }

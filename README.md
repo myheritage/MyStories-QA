@@ -34,6 +34,14 @@ Comprehensive automated testing suite for MyStories web application using Playwr
   - Real email testing (MailSlurp)
   - Development mode (fake emails)
   - Local testing (hardcoded addresses)
+  - Email reply functionality
+  - Answer verification
+  - Photo attachments (coming soon)
+  - Weekly question flow:
+    * Question email verification
+    * Web-based answering
+    * Email-based answering
+    * Answer synchronization verification
 
 ## Installation & Setup
 
