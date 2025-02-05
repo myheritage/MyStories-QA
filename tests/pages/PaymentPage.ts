@@ -70,7 +70,7 @@ export class PaymentPage extends BasePage {
   private readonly basePrice = this.page.getByTestId('product-summary-total-amount').getByText('$');
   private readonly additionalCopyPrice = this.page.getByText(`$${PRICES.ADDITIONAL_COPY_PRICE}`);
   private readonly discountPercentage = this.page.getByText('% off');
-  private readonly totalAmount = this.page.locator(PRICES.SELECTORS.TOTAL_AMOUNT).getByText('$').first();
+  private readonly totalAmount = this.page.locator(PRICES.SELECTORS.TOTAL_AMOUNT);
 
   constructor(page: Page) {
     super(page);

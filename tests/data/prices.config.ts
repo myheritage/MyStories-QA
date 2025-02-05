@@ -21,7 +21,7 @@ export const PRICES = {
   // Test ID selectors for price-related elements
   SELECTORS: {
     LINE_ITEM_TOTAL: 'line-item-total',  // Individual line item price
-    TOTAL_AMOUNT: 'total-amount'         // Total order amount
+    TOTAL_AMOUNT: '#ProductSummary-totalAmount > div > div.mr2.flex-item.width-fixed > span'  // Total order amount
   }
 };
 
