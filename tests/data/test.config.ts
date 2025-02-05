@@ -15,7 +15,8 @@
 export const URLS = {
   HOME: process.env.HOME_URL || 'https://www.mystories.com',
   APP: process.env.APP_URL || 'https://app.mystories.com',
-  LOGIN: process.env.LOGIN_URL || 'https://app.mystories.com/login'
+  LOGIN: process.env.LOGIN_URL || 'https://app.mystories.com/login',
+  SETTINGS: process.env.SETTINGS_URL || 'https://app.mystories.com/settings'
 };
 
 /**
@@ -78,7 +79,7 @@ export const EMAIL_CONFIG = {
   SUBJECTS: {
     WELCOME: 'Welcome to MyStories',
     LOGIN: 'Log in to your MyStories account',
-    GIFT_ACTIVATION: 'A special gift for {receiverFirstName}, from {giverFirstName}',
+    GIFT_RECEIVE: 'A special gift for {receiverFirstName}, from {giverFirstName}',  // Email sent to gift receiver
     GIFT_OPENED: 'Your gift was opened!',
     WEEKLY_QUESTION: '{firstName}, {question}'
   },

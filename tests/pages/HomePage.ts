@@ -9,6 +9,7 @@ export class HomePage extends BasePage {
   // Locators
   private readonly orderNowButton = this.page.getByTestId('linkElement').filter({ hasText: 'Order now' }).first();
   protected readonly loginButton = this.page.getByRole('link', { name: 'Log in' });
+  protected readonly sendLoginLinkButton = this.page.locator('#root > div > div.layout-content.centered > div > div > div > div > button');
   
   // Cookie consent handler
   private readonly cookieHandler: CookieConsentHandler;
@@ -58,7 +59,11 @@ export class HomePage extends BasePage {
   }
 
   async requestLoginLink(email: string) {
+    console.log('Requesting login link for:', email);
+    console.log('Filling email input');
     await this.page.getByPlaceholder('Email').fill(email);
-    await this.page.getByRole('button', { name: 'Send login link' }).click();
+    console.log('Clicking send login link button');
+    await this.sendLoginLinkButton.click();
+    console.log('Login link requested');
   }
 }

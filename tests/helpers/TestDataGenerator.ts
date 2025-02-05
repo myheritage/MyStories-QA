@@ -76,7 +76,7 @@ export class TestDataGenerator {
    */
   private readonly firstNames = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Emma'];
   private readonly lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia'];
-  private readonly domains = ['example.com', 'test.com', 'demo.com', 'testtest.com', 'testtesttest.com', 'testtesttesttest.com'];
+  private readonly domains = ['test.com'];
   private readonly countries = ['United States', 'Canada', 'United Kingdom'];
   private readonly usStates = ['California', 'New York', 'Texas', 'Florida', 'Arizona'];
 
