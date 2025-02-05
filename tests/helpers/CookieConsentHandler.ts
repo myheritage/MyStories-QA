@@ -51,4 +51,27 @@ export class CookieConsentHandler {
     async waitForHidden(timeout = 5000): Promise<void> {
         await this.cookieDialog.waitFor({ state: 'hidden', timeout });
     }
+
+    /**
+     * Wait for the cookie consent banner to become visible with retry mechanism
+     * @param options Configuration for the wait operation
+     * @returns Promise<boolean> indicating if banner became visible
+     */
+    async waitForVisible(options: { timeout?: number; interval?: number } = {}): Promise<boolean> {
+        const { timeout = 5000, interval = 500 } = options;
+        const startTime = Date.now();
+
+        while (Date.now() - startTime < timeout) {
+            console.log('Checking cookie banner visibility...');
+            if (await this.isVisible()) {
+                console.log('Cookie banner is now visible');
+                return true;
+            }
+            console.log(`Cookie banner not visible, waiting ${interval}ms before retry...`);
+            await this.page.waitForTimeout(interval);
+        }
+
+        console.log('Cookie banner did not become visible within timeout period');
+        return false;
+    }
 }

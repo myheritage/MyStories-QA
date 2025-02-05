@@ -22,13 +22,18 @@ test.describe('Homepage Basic Validations', {
   }, async ({ page }) => {
     const homePage = new HomePage(page);
     await homePage.goto();
+    // Find favicon link element
     const favicon = page.locator('link[rel="icon"]');
-    await expect(favicon).toBeVisible();
     
-    // Verify favicon loads successfully
+    // Verify favicon link exists and has required attributes
+    await expect(favicon).toHaveAttribute('rel', 'icon');
+    await expect(favicon).toHaveAttribute('href');
+    
+    // Get favicon URL and verify it loads successfully
     const faviconHref = await favicon.getAttribute('href');
+    console.log('Verifying favicon URL:', faviconHref);
     const response = await page.goto(faviconHref!);
-    expect(response?.status()).toBe(200);
+    expect(response?.status(), 'Favicon should load successfully').toBe(200);
   });
 
   test('should not have console errors', {
@@ -78,30 +83,54 @@ test.describe('Homepage Basic Validations', {
   test('cookie consent banner functionality', {
     tag: ['@CD']
   }, async ({ page }) => {
+    console.log('Starting cookie consent banner test...');
     const homePage = new HomePage(page);
     await homePage.goto();
     
-    // Verify banner appears
+    console.log('Verifying initial banner visibility...');
     const cookieHandler = new CookieConsentHandler(page);
-    expect(await cookieHandler.isVisible()).toBe(true);
+    await expect(
+      cookieHandler.isVisible(),
+      'Cookie banner should be visible on first visit'
+    ).resolves.toBe(true);
     
-    // Test "Allow All" flow
+    console.log('Testing Allow All flow...');
     await cookieHandler.handle(CookieConsentOption.ALLOW_ALL);
     await cookieHandler.waitForHidden();
-    expect(await cookieHandler.isVisible()).toBe(false);
+    await expect(
+      cookieHandler.isVisible(),
+      'Cookie banner should be hidden after Allow All'
+    ).resolves.toBe(false);
     
-    // Reload page and verify banner doesn't reappear
+    console.log('Verifying banner stays hidden after reload...');
     await page.reload();
-    expect(await cookieHandler.isVisible()).toBe(false);
+    await page.waitForLoadState('domcontentloaded');
+    await expect(
+      cookieHandler.isVisible(),
+      'Cookie banner should stay hidden after page reload'
+    ).resolves.toBe(false);
     
-    // Clear cookies and verify banner reappears
+    console.log('Clearing cookies and verifying banner reappears...');
     await page.context().clearCookies();
     await page.reload();
-    expect(await cookieHandler.isVisible()).toBe(true);
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(1000); // Allow time for banner initialization
     
-    // Test "Deny" flow
+    const bannerVisible = await cookieHandler.waitForVisible({
+      timeout: 5000,
+      interval: 500
+    });
+    await expect(
+      Promise.resolve(bannerVisible),
+      'Cookie banner should reappear after clearing cookies and page reload'
+    ).resolves.toBe(true);
+    
+    console.log('Testing Deny flow...');
     await cookieHandler.handle(CookieConsentOption.DENY);
     await cookieHandler.waitForHidden();
-    expect(await cookieHandler.isVisible()).toBe(false);
+    await expect(
+      cookieHandler.isVisible(),
+      'Cookie banner should be hidden after Deny'
+    ).resolves.toBe(false);
   });
 });
