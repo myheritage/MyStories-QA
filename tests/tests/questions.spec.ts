@@ -1,48 +1,72 @@
 import { test } from '@playwright/test';
-import { HomePage } from '../pages/HomePage';
-import { OrderPage } from '../pages/OrderPage';
-import { StoryDetailsPage } from '../pages/StoryDetailsPage';
-import { PaymentPage, stripeTestCards } from '../pages/PaymentPage';
 import { QuestionsPage } from '../pages/QuestionsPage';
 import { TestDataGenerator } from '../helpers/TestDataGenerator';
 import { ScreenshotHelper } from '../helpers/ScreenshotHelper';
+import { TestFlowHelper } from '../helpers/TestFlowHelper';
+import { CookieConsentHandler } from '../helpers/CookieConsentHandler';
+import { CookieConsentOption } from '../pages/BasePage';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-const testData = new TestDataGenerator();
-
-test.describe('Questions Page', {
-  tag: ['@Full']
+/**
+ * Questions Flow Tests
+ * 
+ * These tests verify the core functionality of the questions page:
+ * - Writing and editing answers
+ * - Adding and managing questions
+ * - Preview and PDF generation
+ * - Question filtering
+ */
+test.describe('Questions Flow', {
+  tag: ['@Full', '@Questions']
 }, () => {
+  let testData: TestDataGenerator;
+
+  test.beforeEach(async ({ page }) => {
+    testData = new TestDataGenerator();
+
+    // Log console errors
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        console.error('Console error:', msg.text());
+      }
+    });
+
+    // Handle cookie consent if it appears
+    const cookieHandler = new CookieConsentHandler(page);
+    if (await cookieHandler.isVisible()) {
+      await cookieHandler.handle(CookieConsentOption.ALLOW_ALL);
+    }
+  });
+
+  /**
+   * Complete Answer Workflow Test
+   * 
+   * Steps:
+   * 1. Complete purchase flow to access questions
+   * 2. Write an answer to the first question
+   * 3. Save and preview the answer
+   *    - Captures screenshot
+   *    - Saves PDF if available
+   * 4. Edit the answer with new content
+   * 5. Test question filtering (completed/all)
+   * 
+   * @tags @Sanity
+   */
   test('complete answer workflow', {
     tag: ['@Sanity']
   }, async ({ page }, testInfo) => {
-    test.setTimeout(60000); // 60 seconds since payment flow can take time
-    
     try {
-      // First complete a purchase to get to the questions page
-      const homePage = new HomePage(page);
-      const orderPage = new OrderPage(page);
-      const storyDetailsPage = new StoryDetailsPage(page);
-      const paymentPage = new PaymentPage(page);
-      const questionsPage = new QuestionsPage(page);
-
       // Generate test data
-      const giftGiver = await testData.generateGiftGiver({ withState: true });
-      console.log('Generated test data:', giftGiver);
+      const userDetails = await testData.generateGiftGiver({ withState: true });
+      console.log('Generated test data:', userDetails);
 
-      // Complete purchase flow
-      await homePage.startOrderFlow();
-      await orderPage.selectOrderType('I will');
-      await storyDetailsPage.fillGiftGiverDetails(giftGiver);
-      await paymentPage.completePayment(stripeTestCards.success);
-      
-      // Wait for success page to load fully before proceeding
-      await page.waitForLoadState('networkidle');
-      await paymentPage.visitDashboard();
+      // Complete purchase flow with helper
+      await TestFlowHelper.completeOrderFlow(page, userDetails);
+      await TestFlowHelper.goToDashboard(page);
 
-      // Verify we're on the questions page
-      await questionsPage.waitForDashboard();
+      // Initialize pages
+      const questionsPage = new QuestionsPage(page);
 
       // Start writing an answer
       await questionsPage.startWriting(1);
@@ -74,6 +98,7 @@ test.describe('Questions Page', {
         });
       }
       
+      // Close preview before proceeding
       await previewPage.close();
 
       // Edit the answer
@@ -83,39 +108,40 @@ test.describe('Questions Page', {
       await questionsPage.filterQuestions('completed');
       await questionsPage.filterQuestions('all');
     } catch (error) {
-      // On failure, take a full page screenshot of the main page
+      // Take screenshot before throwing
       await ScreenshotHelper.takeFullPageScreenshot(page, 'complete-answer-workflow-failed');
       throw error;
     }
   });
 
-  test('question management', async ({ page }) => {
-    test.setTimeout(60000); // 60 seconds since payment flow can take time
-    
+  /**
+   * Question Management Test
+   * 
+   * Steps:
+   * 1. Complete purchase flow to access questions
+   * 2. Add a custom question
+   *    - Verify it appears in the list
+   * 3. Add a prewritten question
+   *    - Verify it appears in the list
+   * 4. Edit an existing question
+   *    - Verify the changes are saved
+   * 
+   * @tags @Full
+   */
+  test('question management', {
+    tag: ['@Full']
+  }, async ({ page }, testInfo) => {
     try {
-      // First complete a purchase to get to the questions page
-      const homePage = new HomePage(page);
-      const orderPage = new OrderPage(page);
-      const storyDetailsPage = new StoryDetailsPage(page);
-      const paymentPage = new PaymentPage(page);
-      const questionsPage = new QuestionsPage(page);
-
       // Generate test data
-      const giftGiver = await testData.generateGiftGiver({ withState: true });
-      console.log('Generated test data:', giftGiver);
+      const userDetails = await testData.generateGiftGiver({ withState: true });
+      console.log('Generated test data:', userDetails);
 
-      // Complete purchase flow
-      await homePage.startOrderFlow();
-      await orderPage.selectOrderType('I will');
-      await storyDetailsPage.fillGiftGiverDetails(giftGiver);
-      await paymentPage.completePayment(stripeTestCards.success);
-      
-      // Wait for success page to load fully before proceeding
-      await page.waitForLoadState('networkidle');
-      await paymentPage.visitDashboard();
+      // Complete purchase flow with helper
+      await TestFlowHelper.completeOrderFlow(page, userDetails);
+      await TestFlowHelper.goToDashboard(page);
 
-      // Verify we're on the questions page
-      await questionsPage.waitForDashboard();
+      // Initialize pages
+      const questionsPage = new QuestionsPage(page);
 
       // Add a custom question
       const customQuestion = 'What is your favorite childhood memory?';
@@ -133,7 +159,7 @@ test.describe('Questions Page', {
       await questionsPage.editQuestion(2, newQuestionText);
       await questionsPage.verifyQuestionExists(newQuestionText);
     } catch (error) {
-      // On failure, take a full page screenshot
+      // Take screenshot before throwing
       await ScreenshotHelper.takeFullPageScreenshot(page, 'question-management-failed');
       throw error;
     }
