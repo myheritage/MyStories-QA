@@ -17,6 +17,7 @@ jobs:
       MAILSLURP_API_KEY: ${{ secrets.MAILSLURP_API_KEY }}
       STRIPE_SANDBOX: true
       EMAIL_MODE: fake  # Force fake mode until we fix real-card.ts import issues
+      PLAYWRIGHT_RETRIES: 0  # Disable retries for Sanity tests
 
     steps:
       - uses: actions/checkout@v4

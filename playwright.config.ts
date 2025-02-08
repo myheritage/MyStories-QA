@@ -4,7 +4,12 @@ export default defineConfig({
   testDir: './tests/tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  // Configure test retries:
+  // - Default: process.env.CI ? 2 : 0 (2 retries in CI, 0 in local)
+  // - Override with environment variable: PLAYWRIGHT_RETRIES=N
+  // - Example: PLAYWRIGHT_RETRIES=1 npm run test
+  // - In GitHub Actions: env: { PLAYWRIGHT_RETRIES: 0 }
+  retries: process.env.PLAYWRIGHT_RETRIES ? parseInt(process.env.PLAYWRIGHT_RETRIES) : (process.env.CI ? 2 : 0),
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   globalSetup: require.resolve('./tests/setup.ts'),
