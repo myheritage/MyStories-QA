@@ -44,7 +44,7 @@ test.describe('Self Purchase Emails', {
   });
 
   test('verify welcome email', {
-    tag: ['@Full', '@Sanity']
+    tag: ['@Full']
   }, async ({ page, emailHandler }, testInfo) => {
     // Create test user with MailSlurp inbox (US for state selection)
     const { storyteller: userDetails } = await testData.createTestUser(emailHandler, {
@@ -60,7 +60,7 @@ test.describe('Self Purchase Emails', {
   });
 
   test('verify login email', {
-    tag: ['@Full', '@Sanity']
+    tag: ['@Full']
   }, async ({ page, emailHandler }, testInfo) => {
     // Create test user with MailSlurp inbox (US for state selection)
     const { storyteller: userDetails } = await testData.createTestUser(emailHandler, {
