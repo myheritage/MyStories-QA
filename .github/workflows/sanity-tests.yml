@@ -77,23 +77,21 @@ jobs:
         with:
           payload: |
             {
-              "blocks": [
+              "text": "${{ job.status == 'success' && '✅ Sanity Tests Passed' || '❌ Sanity Tests Failed' }} ${{ job.status != 'success' && '@here' || '' }}",
+              "attachments": [
                 {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "${{ job.status == 'success' && '✅ Sanity Tests Passed' || '❌ Sanity Tests Failed' }} ${{ job.status != 'success' && '@here' || '' }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Run Details:*\n• Tests: ${{ steps.run-tests.outputs.passed }} passed, ${{ steps.run-tests.outputs.failed }} failed, ${{ steps.run-tests.outputs.skipped }} skipped\n• Duration: ${{ steps.run-tests.outputs.duration }}s\n• Status: ${{ steps.run-tests.outputs.status }}\n• Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                  }
+                  "color": "${{ job.status == 'success' && '#36a64f' || '#dc3545' }}",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*Run Details:*\n• Tests: ${{ steps.run-tests.outputs.passed }} passed, ${{ steps.run-tests.outputs.failed }} failed, ${{ steps.run-tests.outputs.skipped }} skipped\n• Duration: ${{ steps.run-tests.outputs.duration }}s\n• Status: ${{ steps.run-tests.outputs.status }}\n• Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                      }
+                    }
+                  ]
                 }
-              ],
-              "color": "${{ job.status == 'success' && '#36a64f' || '#dc3545' }}"
+              ]
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
