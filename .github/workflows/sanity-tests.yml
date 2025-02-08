@@ -43,19 +43,25 @@ jobs:
           echo "MAILSLURP_API_KEY is ${MAILSLURP_API_KEY:+set}${MAILSLURP_API_KEY:-not set}"
           
           # Run tests and capture output
-          if [ "$EMAIL_MODE" = "fake" ]; then
-            echo "Running tests in fake email mode (MailSlurp not configured)"
-            if OUTPUT=$(npx playwright test --grep "@Sanity" --project=Chrome --grep-invert "@Emails" 2>&1); then
-              status="success"
-            else
-              status="failure"
-            fi
-          else
-            echo "Running all tests including email tests"
+          if [ "$EMAIL_MODE" = "mailslurp" ] && [ -n "$MAILSLURP_API_KEY" ]; then
+            echo "Running all tests including email tests (MailSlurp configured)"
             if OUTPUT=$(npx playwright test --grep "@Sanity" --project=Chrome 2>&1); then
               status="success"
             else
               status="failure"
+              # Show test output on failure for debugging
+              echo "Test output:"
+              echo "$OUTPUT"
+            fi
+          else
+            echo "Running tests without email tests (MailSlurp not configured or disabled)"
+            if OUTPUT=$(npx playwright test --grep "@Sanity" --project=Chrome --grep-invert "@Emails" 2>&1); then
+              status="success"
+            else
+              status="failure"
+              # Show test output on failure for debugging
+              echo "Test output:"
+              echo "$OUTPUT"
             fi
           fi
           
