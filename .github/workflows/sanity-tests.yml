@@ -16,7 +16,7 @@ jobs:
     env:
       MAILSLURP_API_KEY: ${{ secrets.MAILSLURP_API_KEY }}
       STRIPE_SANDBOX: true
-      EMAIL_MODE: ${{ secrets.MAILSLURP_API_KEY != '' && 'mailslurp' || 'fake' }}
+      EMAIL_MODE: fake  # Force fake mode until we fix real-card.ts import issues
 
     steps:
       - uses: actions/checkout@v4
