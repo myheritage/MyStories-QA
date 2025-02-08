@@ -57,6 +57,7 @@ export class PaymentPage extends BasePage {
   private readonly cardholderName = this.page.getByRole('textbox', { name: 'Cardholder name' });
   private readonly countryRegion = this.page.getByLabel('Country or region');
   private readonly zipCode = this.page.getByRole('textbox', { name: 'ZIP' });
+  private readonly stripePassCheckbox = this.page.locator('#enableStripePass');
 
   // Page locators
   private readonly promoCodeInput = this.page.getByPlaceholder('Add promotion code');
@@ -114,6 +115,17 @@ export class PaymentPage extends BasePage {
     
     console.log('Filling payment details...');
     
+    // Check and disable Stripe Pass if needed
+    const stripePassExists = await this.stripePassCheckbox.count() > 0;
+    if (stripePassExists) {
+      console.log('Found Stripe Pass checkbox, checking state...');
+      const isChecked = await this.stripePassCheckbox.isChecked();
+      if (isChecked) {
+        console.log('Stripe Pass is checked, unchecking to avoid phone requirement');
+        await this.stripePassCheckbox.uncheck();
+      }
+    }
+
     if (isRealCard) {
       // Use human-like interactions for real cards
       console.log('Using human-like interactions for real card...');
