@@ -16,7 +16,7 @@ jobs:
     env:
       MAILSLURP_API_KEY: ${{ secrets.MAILSLURP_API_KEY }}
       STRIPE_SANDBOX: true
-      EMAIL_MODE: mailslurp
+      EMAIL_MODE: ${{ secrets.MAILSLURP_API_KEY != '' && 'mailslurp' || 'fake' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -38,11 +38,25 @@ jobs:
         run: |
           start_time=$(date +%s)
           
+          # Log email mode for debugging
+          echo "EMAIL_MODE is set to: $EMAIL_MODE"
+          echo "MAILSLURP_API_KEY is ${MAILSLURP_API_KEY:+set}${MAILSLURP_API_KEY:-not set}"
+          
           # Run tests and capture output
-          if OUTPUT=$(npx playwright test --grep "@Sanity" --project=Chrome 2>&1); then
-            status="success"
+          if [ "$EMAIL_MODE" = "fake" ]; then
+            echo "Running tests in fake email mode (MailSlurp not configured)"
+            if OUTPUT=$(npx playwright test --grep "@Sanity" --project=Chrome --grep-invert "@Emails" 2>&1); then
+              status="success"
+            else
+              status="failure"
+            fi
           else
-            status="failure"
+            echo "Running all tests including email tests"
+            if OUTPUT=$(npx playwright test --grep "@Sanity" --project=Chrome 2>&1); then
+              status="success"
+            else
+              status="failure"
+            fi
           fi
           
           # Calculate duration
