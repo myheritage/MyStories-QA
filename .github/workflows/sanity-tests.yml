@@ -45,7 +45,7 @@ jobs:
           # Run tests and capture output
           if [ "$EMAIL_MODE" = "mailslurp" ] && [ -n "$MAILSLURP_API_KEY" ]; then
             echo "Running all tests including email tests (MailSlurp configured)"
-            if OUTPUT=$(npx playwright test --grep "@Sanity" --project=Chrome 2>&1); then
+            if OUTPUT=$(npx playwright test --grep "@Sanity" --grep-invert "@real-card" --project=Chrome 2>&1); then
               status="success"
             else
               status="failure"
@@ -55,7 +55,7 @@ jobs:
             fi
           else
             echo "Running tests without email tests (MailSlurp not configured or disabled)"
-            if OUTPUT=$(npx playwright test --grep "@Sanity" --project=Chrome --grep-invert "@Emails" 2>&1); then
+            if OUTPUT=$(npx playwright test --grep "@Sanity" --grep-invert "@Emails|@real-card" --project=Chrome 2>&1); then
               status="success"
             else
               status="failure"
@@ -74,16 +74,29 @@ jobs:
           failed=$(echo "$OUTPUT" | grep -o '[0-9]* failed' | awk '{print $1}')
           skipped=$(echo "$OUTPUT" | grep -o '[0-9]* skipped' | awk '{print $1}')
           
+          # Extract failed test names if any failures
+          if [ "${failed:-0}" -gt 0 ]; then
+            echo "Failed tests:" >> $GITHUB_STEP_SUMMARY
+            echo "$OUTPUT" | grep -B 1 "FAIL" | grep "✘" | sed 's/.*✘ /• /' >> $GITHUB_STEP_SUMMARY
+            failed_tests=$(echo "$OUTPUT" | grep -B 1 "FAIL" | grep "✘" | sed 's/.*✘ /• /')
+          else
+            failed_tests=""
+          fi
+          
           # Set outputs
           echo "duration=$duration" >> $GITHUB_OUTPUT
           echo "status=$status" >> $GITHUB_OUTPUT
           echo "passed=${passed:-0}" >> $GITHUB_OUTPUT
           echo "failed=${failed:-0}" >> $GITHUB_OUTPUT
           echo "skipped=${skipped:-0}" >> $GITHUB_OUTPUT
+          echo "failed_tests<<EOF" >> $GITHUB_OUTPUT
+          echo "$failed_tests" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
           
           test "$status" = "success"
         
       - name: Upload test results
+        id: upload-results
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -97,21 +110,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "${{ job.status == 'success' && '✅ Sanity Tests Passed' || '❌ Sanity Tests Failed' }} ${{ job.status != 'success' && '@here' || '' }}",
-              "attachments": [
-                {
-                  "color": "${{ job.status == 'success' && '#36a64f' || '#dc3545' }}",
-                  "blocks": [
-                    {
-                      "type": "section",
-                      "text": {
-                        "type": "mrkdwn",
-                        "text": "*Run Details:*\n• Tests: ${{ steps.run-tests.outputs.passed }} passed, ${{ steps.run-tests.outputs.failed }} failed, ${{ steps.run-tests.outputs.skipped }} skipped\n• Duration: ${{ steps.run-tests.outputs.duration }}s\n• Status: ${{ steps.run-tests.outputs.status }}\n• Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                      }
-                    }
-                  ]
-                }
-              ]
+              "text": "*Sanity Tests ${{ job.status == 'success' && '✅ PASSED' || '❌ FAILED' }}*\n\n*Run Details:*\n• Tests: ${{ steps.run-tests.outputs.passed }} passed, ${{ steps.run-tests.outputs.failed }} failed, ${{ steps.run-tests.outputs.skipped }} skipped\n• Duration: ${{ steps.run-tests.outputs.duration }}s\n• Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n• Report: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload-results.outputs.artifact-id }}${{ steps.run-tests.outputs.failed != '0' && '\n\n*Failed Tests:*\n' || '' }}${{ steps.run-tests.outputs.failed_tests }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
