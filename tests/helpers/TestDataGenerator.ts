@@ -5,11 +5,12 @@
  * - User profiles for different test scenarios
  * - Integration with email testing systems
  * - Support for both random and hardcoded data modes
+ * - Unique email generation with timestamps (e.g., john.smith.1738837932@test.com)
  * 
  * This helper ensures consistent and reliable test data across the test suite
  */
 
-import { EmailHandler } from './EmailHandler';
+import { EmailHandler, EmailMode } from './EmailHandler';
 import { TEST_USER_DEFAULTS } from '../data/test.config';
 
 /**
@@ -92,9 +93,19 @@ export class TestDataGenerator {
    * Generates a deterministic email address from name components
    * Ensures consistent email format for test users
    */
+  /**
+   * Generates an email address with timestamp to ensure uniqueness
+   * Format: firstname.lastname.timestamp@domain
+   * Example: john.smith.1738837932@test.com
+   * 
+   * @param firstName First name component
+   * @param lastName Last name component
+   * @returns Unique email address with timestamp
+   */
   private generateEmail(firstName: string, lastName: string): string {
     const domain = this.getRandomElement(this.domains);
-    return `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${domain}`;
+    const timestamp = Math.floor(Date.now() / 1000);  // Unix epoch
+    return `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${timestamp}@${domain}`;
   }
 
   /**
@@ -198,17 +209,19 @@ export class TestDataGenerator {
         isGiftRecipient: true
       });
 
-      // Create MailSlurp inboxes
-      const storytellerEmail = await emailHandler.createMailSlurpInbox();
-      const giftGiverEmail = await emailHandler.createMailSlurpInbox();
+      if (emailHandler.getMode() === EmailMode.MAILSLURP) {
+        // Create MailSlurp inboxes
+        const storytellerEmail = await emailHandler.createMailSlurpInbox();
+        const giftGiverEmail = await emailHandler.createMailSlurpInbox();
+        storyteller.email = storytellerEmail;
+        giftGiver.email = giftGiverEmail;
+      }
 
-      // Register inboxes
-      await emailHandler.registerInbox(storytellerEmail, true);
-      await emailHandler.registerInbox(giftGiverEmail);
+      // Register inboxes (works for all modes)
+      await emailHandler.registerInbox(storyteller.email, true);
+      await emailHandler.registerInbox(giftGiver.email);
 
-      // Update emails and set gift giver name
-      storyteller.email = storytellerEmail;
-      giftGiver.email = giftGiverEmail;
+      // Set gift giver name
       storyteller.giftGiverName = giftGiver.firstName;
 
       return { storyteller, giftGiver };
@@ -216,10 +229,14 @@ export class TestDataGenerator {
       // Create single user
       const storyteller = await this.generateStoryTeller(options);
       
-      // Create and register MailSlurp inbox
-      const email = await emailHandler.createMailSlurpInbox();
-      await emailHandler.registerInbox(email);
-      storyteller.email = email;
+      if (emailHandler.getMode() === EmailMode.MAILSLURP) {
+        // Create and use MailSlurp inbox
+        const email = await emailHandler.createMailSlurpInbox();
+        storyteller.email = email;
+      }
+
+      // Register inbox (works for all modes)
+      await emailHandler.registerInbox(storyteller.email);
 
       return { storyteller };
     }

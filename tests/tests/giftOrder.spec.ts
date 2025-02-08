@@ -54,8 +54,9 @@ test.describe('Gift Order Flow', {
 
     // Verify market price
     const price = await paymentPage.getMarketPrice();
-    console.log('Market price:', price);
-    expect(price).toContain(`$${PRICES.MARKET_PRICE}`);
+    const expectedPrice = calculateTotalPrice(giftGiver.copies);
+    console.log(`Market price: ${price}, Expected: $${expectedPrice}`);
+    expect(price).toContain(`$${expectedPrice}`);
 
     // Complete payment
     await paymentPage.completePayment(stripeTestCards.success, true);
@@ -71,8 +72,11 @@ test.describe('Gift Order Flow', {
     const storyDetailsPage = new StoryDetailsPage(page);
     const paymentPage = new PaymentPage(page);
 
-    // Generate test data with future date
-    const futureDate = '2025-02-27';
+    // Generate test data with tomorrow's date
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const futureDate = tomorrow.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    console.log('Setting gift delivery date to:', futureDate);
     const storyteller = await testData.generateStoryTeller({ 
       isGiftRecipient: true,
       giftDate: futureDate 
@@ -88,8 +92,9 @@ test.describe('Gift Order Flow', {
 
     // Verify market price
     const price = await paymentPage.getMarketPrice();
-    console.log('Market price:', price);
-    expect(price).toContain(`$${PRICES.MARKET_PRICE}`);
+    const expectedPrice = calculateTotalPrice(giftGiver.copies);
+    console.log(`Market price: ${price}, Expected: $${expectedPrice}`);
+    expect(price).toContain(`$${expectedPrice}`);
 
     await paymentPage.completePayment(stripeTestCards.success, true);
     await expect(page).toHaveURL(/\/order\/success/);
@@ -151,7 +156,7 @@ test.describe('Gift Order Flow', {
     console.log('Filled all details');
 
     // Wait for price to update after copies selection
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(3000);
 
     // Verify initial price
     const initialPrice = await paymentPage.getMarketPrice();

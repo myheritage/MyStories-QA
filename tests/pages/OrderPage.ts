@@ -6,10 +6,10 @@ export type OrderType = 'I will' | 'Someone else';
 
 export class OrderPage extends BasePage {
   // Locators
-  private readonly iWillOption = this.page.getByText('I will').first();
-  private readonly someoneElseOption = this.page.getByText('Someone else').first();
+  private readonly iWillOption = this.page.locator('#root > div > div.layout-content > div > div > div > div.ant-col.ant-col-xs-24.ant-col-sm-24.ant-col-md-12.ant-col-lg-16.css-jaljq0 > div > div:nth-child(2) > div > div > div > div:nth-child(2) > div > div > div:nth-child(1) > div');
+  private readonly someoneElseOption = this.page.locator('#root > div > div.layout-content > div > div > div > div.ant-col.ant-col-xs-24.ant-col-sm-24.ant-col-md-12.ant-col-lg-16.css-jaljq0 > div > div:nth-child(2) > div > div > div > div:nth-child(2) > div > div > div:nth-child(2) > div');
   private readonly nextButton = this.page.getByRole('button', { name: 'Next' });
-  private readonly pageTitle = this.page.getByText('Who will be telling the stories?');
+  private readonly pageTitle = this.page.locator('#root > div > div.layout-content > div > div > div > div.ant-col.ant-col-xs-24.ant-col-sm-24.ant-col-md-12.ant-col-lg-16.css-jaljq0 > div > div:nth-child(2) > div > div > div > div:nth-child(1) > h3');
   private readonly cookieHandler: CookieConsentHandler;
 
   constructor(page: Page) {
@@ -17,7 +17,12 @@ export class OrderPage extends BasePage {
     this.cookieHandler = new CookieConsentHandler(page);
   }
 
-  async selectOrderType(type: OrderType) {
+  /**
+   * Select order type and proceed to next step
+   * @param type Type of order ('I will' or 'Someone else')
+   * @param skipTestMode If true, keeps original URL without test mode. Used for real card tests.
+   */
+  async selectOrderType(type: OrderType, skipTestMode = false) {
     // Wait for page to be ready
     await this.page.waitForLoadState('networkidle');
     await this.pageTitle.waitFor({ state: 'visible', timeout: 10000 });
@@ -37,11 +42,14 @@ export class OrderPage extends BasePage {
     // Click Next and wait for navigation
     await this.nextButton.click();
     
-    // Add test mode to URL
-    const currentUrl = this.page.url();
-    const testModeUrl = await this.addTestMode(currentUrl);
-    console.log('Navigating to sandbox URL:', testModeUrl);
-    await this.page.goto(testModeUrl);
+    if (!skipTestMode) {
+      // Add test mode to URL only for non-real-card tests
+      const currentUrl = this.page.url();
+      const testModeUrl = await this.addTestMode(currentUrl);
+      console.log('Navigating to sandbox URL:', testModeUrl);
+      await this.page.goto(testModeUrl);
+    }
+
     await this.page.waitForLoadState('networkidle');
   }
 

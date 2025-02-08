@@ -13,19 +13,24 @@ console.log('Loaded MAILSLURP_API_KEY:', process.env.MAILSLURP_API_KEY ?
   'undefined');
 console.log('=========================\n');
 
+// Set TEST_FILE from command line argument if provided
+const testFileArg = process.argv.find(arg => arg.endsWith('.spec.ts'));
+if (testFileArg) {
+  process.env.TEST_FILE = testFileArg;
+  console.log('Running test file:', process.env.TEST_FILE);
+}
+
 // Set default values for required environment variables
 process.env.TEST_ENV = process.env.TEST_ENV || 'local';
 process.env.SCREENSHOT_DIR = process.env.SCREENSHOT_DIR || 'test-results/screenshots';
 
 // Email mode configuration
-// Default to FAKE mode for safety
-process.env.EMAIL_MODE = process.env.EMAIL_MODE || 'fake';
-
-// For backward compatibility with existing settings
-if (process.env.USE_STATIC_EMAILS === 'true') {
-  process.env.EMAIL_MODE = 'fake';
-} else if (process.env.MAILSLURP_API_KEY) {
-  process.env.EMAIL_MODE = 'mailslurp';
+if (!process.env.EMAIL_MODE) {
+  throw new Error(
+    'EMAIL_MODE is not set. Please add EMAIL_MODE to your .env file.\n' +
+    'Valid values are: mailslurp, fake, hardcoded\n' +
+    'Example: EMAIL_MODE=fake'
+  );
 }
 
 // Validate email mode configuration

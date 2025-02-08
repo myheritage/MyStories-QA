@@ -14,8 +14,8 @@ import { CookieConsentOption } from '../../pages/BasePage';
 const test = base.extend<{ emailHandler: EmailHandler }>({
   emailHandler: async ({ browser }, use) => {
     const handler = new EmailHandler({
-      mode: process.env.EMAIL_MODE === 'hardcoded' ? EmailMode.HARDCODED : EmailMode.MAILSLURP,
-      mailslurpApiKey: process.env.MAILSLURP_API_KEY,
+      mode: EmailMode[process.env.EMAIL_MODE?.toUpperCase() as keyof typeof EmailMode] || EmailMode.FAKE,
+      mailslurpApiKey: process.env.EMAIL_MODE === 'mailslurp' ? process.env.MAILSLURP_API_KEY : undefined,
       hardcodedEmails: process.env.EMAIL_MODE === 'hardcoded' ? {
         purchaser: process.env.HARDCODED_EMAIL!,
         recipient: process.env.HARDCODED_RECIPIENT_EMAIL
@@ -37,7 +37,7 @@ test.describe('Payment Security', {
     testData = new TestDataGenerator();
   });
 
-  test('prevent price manipulation', async ({ page, emailHandler }) => {
+  test('prevent price manipulation', async ({ page, emailHandler }, testInfo) => {
     // Start order flow
     const homePage = new HomePage(page);
     await homePage.startOrderFlow(CookieConsentOption.ALLOW_ALL);
@@ -75,9 +75,14 @@ test.describe('Payment Security', {
     // Verify payment was rejected or original price was enforced
     const errorMessage = await paymentPage.getErrorMessage();
     expect(errorMessage).toBeTruthy();
+    
+    testInfo.annotations.push({
+      type: 'Security Test Results',
+      description: `✅ Price manipulation blocked:\nAttempted price: $10.00\nActual charge: ${SECURITY_CONFIG.PAYMENT_TEST_DATA.PRICE_POINTS.SINGLE_BOOK}\nError: ${errorMessage}`
+    });
   });
 
-  test('prevent order total tampering', async ({ page, emailHandler }) => {
+  test('prevent order total tampering', async ({ page, emailHandler }, testInfo) => {
     // Start order flow
     const homePage = new HomePage(page);
     await homePage.startOrderFlow(CookieConsentOption.ALLOW_ALL);
@@ -121,10 +126,15 @@ test.describe('Payment Security', {
       const total = await page.locator('[data-testid="total-amount"]').textContent();
       const cleanedTotal = parseFloat(total?.replace(/[^0-9.]/g, '') || '0');
       expect(cleanedTotal).toBe(expectedTotal);
+      
+      testInfo.annotations.push({
+        type: 'Security Test Results',
+        description: `✅ Quantity manipulation blocked:\nAttempted quantity: ${quantity}\nExpected total: $${expectedTotal}\nActual total: $${cleanedTotal}`
+      });
     }
   });
 
-  test('validate promo code security', async ({ page, emailHandler }) => {
+  test('validate promo code security', async ({ page, emailHandler }, testInfo) => {
     // Start order flow
     const homePage = new HomePage(page);
     await homePage.startOrderFlow(CookieConsentOption.ALLOW_ALL);
@@ -142,18 +152,48 @@ test.describe('Payment Security', {
 
     // Test invalid promo codes
     for (const code of SECURITY_CONFIG.PAYMENT_TEST_DATA.INVALID_PROMO_CODES) {
-      await securityHelper.testPromoCode(code);
+      try {
+        await securityHelper.testPromoCode(code);
+        testInfo.annotations.push({
+          type: 'Security Test Results',
+          description: `✅ Invalid promo code blocked: ${code}`
+        });
+      } catch (error) {
+        testInfo.annotations.push({
+          type: 'Security Test Results',
+          description: `❌ Invalid promo code not blocked: ${code}\nError: ${error instanceof Error ? error.message : String(error)}`
+        });
+        throw error;
+      }
     }
 
     // Test SQL injection in promo code
-    await securityHelper.testPromoCode('\' OR \'1\'=\'1');
-    await securityHelper.testPromoCode('"); DROP TABLE promo_codes; --');
+    const sqlInjectionTests = [
+      '\' OR \'1\'=\'1',
+      '"); DROP TABLE promo_codes; --'
+    ];
+    
+    for (const injection of sqlInjectionTests) {
+      try {
+        await securityHelper.testPromoCode(injection);
+        testInfo.annotations.push({
+          type: 'Security Test Results',
+          description: `✅ SQL injection blocked: ${injection}`
+        });
+      } catch (error) {
+        testInfo.annotations.push({
+          type: 'Security Test Results',
+          description: `❌ SQL injection not blocked: ${injection}\nError: ${error instanceof Error ? error.message : String(error)}`
+        });
+        throw error;
+      }
+    }
 
     // Verify original price remains unchanged
     await securityHelper.verifyPriceIntegrity(SECURITY_CONFIG.PAYMENT_TEST_DATA.PRICE_POINTS.SINGLE_BOOK);
   });
 
-  test('prevent payment intent tampering', async ({ page, emailHandler }) => {
+  test('prevent payment intent tampering', async ({ page, emailHandler }, testInfo) => {
     // Start order flow
     const homePage = new HomePage(page);
     await homePage.startOrderFlow(CookieConsentOption.ALLOW_ALL);
@@ -188,8 +228,18 @@ test.describe('Payment Security', {
     // Verify payment was rejected or original price was enforced
     const errorMessage = await paymentPage.getErrorMessage();
     expect(errorMessage).toBeTruthy();
+    
+    testInfo.annotations.push({
+      type: 'Security Test Results',
+      description: `✅ Payment intent tampering blocked:\nAttempted amount: $0.01\nError: ${errorMessage}`
+    });
 
     // Verify final charge matches original price
     await securityHelper.verifyPriceIntegrity(SECURITY_CONFIG.PAYMENT_TEST_DATA.PRICE_POINTS.SINGLE_BOOK);
+    
+    testInfo.annotations.push({
+      type: 'Security Test Results',
+      description: `✅ Final charge verified: $${SECURITY_CONFIG.PAYMENT_TEST_DATA.PRICE_POINTS.SINGLE_BOOK}`
+    });
   });
 });

@@ -17,9 +17,69 @@ export default defineConfig({
 
   projects: [
     {
-      name: 'chromium',
+      name: 'Chrome',
       use: { 
         ...devices['Desktop Chrome'],
+        screenshot: {
+          mode: 'on',
+          fullPage: true
+        }
+      },
+    },
+    {
+      name: 'Firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        screenshot: {
+          mode: 'on',
+          fullPage: true
+        }
+      },
+    },
+    {
+      name: 'Safari',
+      use: {
+        ...devices['Desktop Safari'],
+        screenshot: {
+          mode: 'on',
+          fullPage: true
+        }
+      },
+    },
+    {
+      name: 'iphone',
+      use: {
+        ...devices['iPhone 12'],
+        screenshot: {
+          mode: 'on',
+          fullPage: true
+        }
+      },
+    },
+    {
+      name: 'android',
+      use: {
+        ...devices['Pixel 5'],
+        screenshot: {
+          mode: 'on',
+          fullPage: true
+        }
+      },
+    },
+    {
+      name: 'ipad',
+      use: {
+        ...devices['iPad Air'],
+        screenshot: {
+          mode: 'on',
+          fullPage: true
+        }
+      },
+    },
+    {
+      name: 'android-tablet',
+      use: {
+        ...devices['Galaxy Tab S4'],
         screenshot: {
           mode: 'on',
           fullPage: true

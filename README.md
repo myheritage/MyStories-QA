@@ -31,9 +31,13 @@ Comprehensive automated testing suite for MyStories web application using Playwr
   - Resource usage monitoring
 
 - **Email Testing**
-  - Real email testing (MailSlurp)
-  - Development mode (fake emails)
-  - Local testing (hardcoded addresses)
+  - Multiple email modes with different behaviors:
+    * Regular tests: respect EMAIL_MODE setting
+    * Email tests (emails.spec.ts): if fake, use mailslurp
+    * Real card tests: always use mailslurp
+  - Real email testing with MailSlurp
+  - Development mode with fake emails
+  - Local testing with hardcoded addresses
   - Email reply functionality
   - Answer verification
   - Photo attachments (coming soon)
@@ -74,8 +78,9 @@ Key configurations:
 
 ```bash
 # Email Testing Mode
-EMAIL_MODE=fake|mailslurp|hardcoded
-MAILSLURP_API_KEY=your-key  # For mailslurp mode
+EMAIL_MODE=fake|mailslurp|hardcoded  # Required
+MAILSLURP_API_KEY=your-key           # Required for mailslurp mode
+HARDCODED_EMAIL=email@example.com    # Required for hardcoded mode
 
 # Test Environment
 TEST_ENVIRONMENT=sandbox
@@ -149,7 +154,14 @@ npx playwright test tests/tests/security/input.spec.ts  # Specific suite
 npx playwright test tests/tests/performance.spec.ts
 
 # Email Tests
+# Different modes have different behaviors:
+# - Regular tests: respect EMAIL_MODE setting
+# - Email tests (emails.spec.ts): if fake, use mailslurp
+# - Real card tests: always use mailslurp
 npx playwright test tests/tests/emails.spec.ts
+
+# Run email mode unit tests
+npx playwright test tests/helpers/__tests__/EmailHandler.test.ts
 ```
 
 ## Project Structure
@@ -262,8 +274,14 @@ npm run codegen
    - Review recent code changes
 
 3. **Email Test Issues**
-   - Verify API keys
-   - Check email mode configuration
+   - Verify API keys and mode configuration:
+     * EMAIL_MODE must be set to fake, mailslurp, or hardcoded
+     * MAILSLURP_API_KEY required for mailslurp mode
+     * HARDCODED_EMAIL required for hardcoded mode
+   - Check test type:
+     * Regular tests use configured EMAIL_MODE
+     * Email tests (emails.spec.ts) force mailslurp if mode=fake
+     * Real card tests always use mailslurp
    - Review spam filters
 
 ## Contributing

@@ -28,7 +28,7 @@ export class QuestionsPage extends BasePage {
   private readonly customQuestionDoneButton = this.page.getByLabel('Add your own question').getByRole('button', { name: 'Done' });
   
   // Question editing
-  private readonly answerEditor = this.page.locator('[data-slate-node="element"]');
+  private readonly answerEditor = this.page.locator('#root > div > div.layout-content > div > div.inner > div > div.story-section > div.answer-input-wrapper > div > p');
   private readonly questionOptionsButton = (index: number) => this.page.locator(`div:nth-child(${index}) > .story-quick-actions > div:nth-child(3) > .ant-dropdown-trigger > svg`);
   private readonly editQuestionOption = this.page.getByText('Edit question');
   private readonly deleteQuestionOption = this.page.getByRole('menuitem', { name: 'Delete Delete question' }).locator('span');

@@ -15,8 +15,14 @@ import { URLS, EMAIL_CONFIG } from '../data/test.config';
 // Extend base test with EmailHandler
 const test = base.extend<{ emailHandler: EmailHandler }>({
   emailHandler: async ({ browser }, use) => {
+    const mode = process.env.EMAIL_MODE === 'hardcoded' ? 
+      EmailMode.HARDCODED : 
+      process.env.EMAIL_MODE === 'mailslurp' ? 
+        EmailMode.MAILSLURP : 
+        EmailMode.MAILSLURP; // Force MAILSLURP for fake mode in email tests
+    
     const handler = new EmailHandler({
-      mode: process.env.EMAIL_MODE === 'hardcoded' ? EmailMode.HARDCODED : EmailMode.MAILSLURP,
+      mode,
       mailslurpApiKey: process.env.MAILSLURP_API_KEY,
       hardcodedEmails: process.env.EMAIL_MODE === 'hardcoded' ? {
         purchaser: process.env.HARDCODED_EMAIL!,
@@ -37,7 +43,9 @@ test.describe('Self Purchase Emails', {
     testData = new TestDataGenerator();
   });
 
-  test('verify welcome email', async ({ page, emailHandler }, testInfo) => {
+  test('verify welcome email', {
+    tag: ['@Full', '@Sanity']
+  }, async ({ page, emailHandler }, testInfo) => {
     // Create test user with MailSlurp inbox (US for state selection)
     const { storyteller: userDetails } = await testData.createTestUser(emailHandler, {
       withState: true  // This will use US country with state
@@ -51,7 +59,9 @@ test.describe('Self Purchase Emails', {
     await emailHandler.verifyWelcomeProcess(page, userDetails, testInfo);
   });
 
-  test('verify login email', async ({ page, emailHandler }, testInfo) => {
+  test('verify login email', {
+    tag: ['@Full', '@Sanity']
+  }, async ({ page, emailHandler }, testInfo) => {
     // Create test user with MailSlurp inbox (US for state selection)
     const { storyteller: userDetails } = await testData.createTestUser(emailHandler, {
       withState: true  // This will use US country with state

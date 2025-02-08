@@ -1,0 +1,13 @@
+# Real card details for testing
+# To use:
+# 1. Copy this file to real-card.yml
+# 2. Update with actual card details
+# 3. Never commit real-card.yml
+#
+# IMPORTANT: All real card tests use promo code MH99 for 99% discount ($1.00 final price)
+# This minimizes actual charges while still testing the payment flow.
+
+card:
+  number: "4111111111111111"  # Replace with real card
+  expiry: "12/25"            # Replace with real expiry
+  cvc: "123"                 # Replace with real CVC

@@ -16,8 +16,8 @@ import { SettingsPage } from '../../pages/SettingsPage';
 const test = base.extend<{ emailHandler: EmailHandler }>({
   emailHandler: async ({ browser }, use) => {
     const handler = new EmailHandler({
-      mode: process.env.EMAIL_MODE === 'hardcoded' ? EmailMode.HARDCODED : EmailMode.MAILSLURP,
-      mailslurpApiKey: process.env.MAILSLURP_API_KEY,
+      mode: EmailMode[process.env.EMAIL_MODE?.toUpperCase() as keyof typeof EmailMode] || EmailMode.FAKE,
+      mailslurpApiKey: process.env.EMAIL_MODE === 'mailslurp' ? process.env.MAILSLURP_API_KEY : undefined,
       hardcodedEmails: process.env.EMAIL_MODE === 'hardcoded' ? {
         purchaser: process.env.HARDCODED_EMAIL!,
         recipient: process.env.HARDCODED_RECIPIENT_EMAIL
@@ -39,7 +39,7 @@ test.describe('Privacy & Data Protection', {
     testData = new TestDataGenerator();
   });
 
-  test('enforce cookie consent - deny all', async ({ page }) => {
+  test('enforce cookie consent - deny all', async ({ page }, testInfo) => {
     // Start from homepage with denied cookies
     const homePage = new HomePage(page);
     await homePage.startOrderFlow(CookieConsentOption.DENY);
@@ -56,9 +56,18 @@ test.describe('Privacy & Data Protection', {
       cookie.name.includes(SECURITY_CONFIG.PRIVACY_TEST_DATA.COOKIE_TYPES.ESSENTIAL)
     );
     expect(hasEssentialCookies).toBe(true);
+    
+    // Record results
+    testInfo.annotations.push({
+      type: 'Security Test Results',
+      description: `Cookie Consent Test Results:
+✅ Analytics cookies blocked
+✅ Marketing cookies blocked
+✅ Essential cookies working`
+    });
   });
 
-  test('verify privacy settings persistence', async ({ page, emailHandler }) => {
+  test('verify privacy settings persistence', async ({ page, emailHandler }, testInfo) => {
     // Create test user and complete purchase
     const { storyteller } = await testData.createTestUser(emailHandler, {
       withState: true
@@ -77,10 +86,15 @@ test.describe('Privacy & Data Protection', {
       await page.reload();
       const isEnabled = await page.locator(`[data-testid="privacy-setting-${setting}"]`).isChecked();
       expect(isEnabled).toBe(defaultValue);
+      
+      testInfo.annotations.push({
+        type: 'Security Test Results',
+        description: `✅ Privacy setting "${setting}" persisted:\nExpected: ${defaultValue}\nActual: ${isEnabled}`
+      });
     }
   });
 
-  test('protect user data access', async ({ page, emailHandler }) => {
+  test('protect user data access', async ({ page, emailHandler }, testInfo) => {
     // Create two test users
     const { storyteller: user1 } = await testData.createTestUser(emailHandler, {
       withState: true
@@ -114,9 +128,17 @@ test.describe('Privacy & Data Protection', {
     // Try to directly access first user's story URL
     await page.goto(`${URLS.APP}/stories/${user1.email}`);
     expect(page.url()).not.toContain(user1.email);
+    
+    testInfo.annotations.push({
+      type: 'Security Test Results',
+      description: `Data Access Protection Results:
+✅ User 2 cannot see User 1's story content
+✅ Direct URL access blocked
+✅ User data properly isolated`
+    });
   });
 
-  test('verify data export functionality', async ({ page, emailHandler }) => {
+  test('verify data export functionality', async ({ page, emailHandler }, testInfo) => {
     // Create test user and complete purchase
     const { storyteller } = await testData.createTestUser(emailHandler, {
       withState: true
@@ -152,5 +174,14 @@ test.describe('Privacy & Data Protection', {
     // Verify sensitive data is properly redacted
     expect(exportContent.payment_history).not.toContain('card_');
     expect(JSON.stringify(exportContent)).not.toMatch(/\d{4}-\d{4}-\d{4}-\d{4}/);
+    
+    testInfo.annotations.push({
+      type: 'Security Test Results',
+      description: `Data Export Security Results:
+✅ All required data types included:
+${SECURITY_CONFIG.PRIVACY_TEST_DATA.DATA_EXPORT_TYPES.map(type => `  - ${type}`).join('\n')}
+✅ Credit card numbers redacted
+✅ Payment tokens redacted`
+    });
   });
 });

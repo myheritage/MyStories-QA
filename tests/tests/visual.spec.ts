@@ -24,7 +24,9 @@ if (activePages.length === 0) {
   console.warn('No pages enabled for visual testing. Skipping suite.');
 }
 
-test.describe('Visual Regression Tests', () => {
+test.describe('Visual Regression Tests', {
+  tag: ['@Full', '@Visual', '@Sanity']
+}, () => {
   const visualHelper = new VisualTestHelper();
 
   activePages.forEach((pageName) => {

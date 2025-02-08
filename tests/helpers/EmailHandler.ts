@@ -61,14 +61,7 @@ export class EmailHandler {
       console.log('🏦 Sandbox mode enabled - affects weekly question email intervals');
     }
     
-    // For email tests (emails.spec.ts), always use MailSlurp if mode is fake
-    const isEmailTest = process.env.TEST_FILE?.includes('emails.spec.ts');
-    if (this.mode === EmailMode.FAKE && isEmailTest) {
-      console.log('📧 Email test detected - using MailSlurp for fake mode');
-      this.mode = EmailMode.MAILSLURP;
-    }
-    
-    console.log(`📧 Email mode: ${this.mode}`);
+    console.log(`📧 Email mode: ${this.mode} (from ${process.env.EMAIL_MODE})`);
 
     switch (this.mode) {
       case EmailMode.MAILSLURP:
@@ -110,8 +103,16 @@ export class EmailHandler {
     this.browser = browser;
   }
 
+  /**
+   * Get the current email mode
+   * @returns The current EmailMode
+   */
+  getMode(): EmailMode {
+    return this.mode;
+  }
+
   private shouldUseMailSlurp(): boolean {
-    return this.mode === EmailMode.MAILSLURP || this.mode === EmailMode.FAKE;
+    return this.mode === EmailMode.MAILSLURP;
   }
 
   private async ensureClient(): Promise<void> {
@@ -597,6 +598,57 @@ export class EmailHandler {
     });
     
     console.log('Reply sent');
+  }
+
+  /**
+   * Send transaction details for backoffice refund processing
+   * 
+   * IMPORTANT: This is for internal backoffice use only, not part of website testing.
+   * After each real card payment test, we send an email with the transaction details
+   * to help the backoffice team process refunds. This is separate from the actual
+   * website validation and is only used for test cleanup purposes.
+   * 
+   * @param transactionInfo Details of the successful payment
+   */
+  async sendRefundInfo(transactionInfo: {
+    date: string;
+    amount: string;
+    cardLast4: string;
+    promoCode: string;
+    userDetails: {
+      firstName: string;
+      lastName: string;
+      email: string;
+    };
+  }): Promise<void> {
+    console.log('📧 Sending backoffice refund info email...');
+    console.log('Transaction details:', {
+      ...transactionInfo,
+      cardLast4: `****${transactionInfo.cardLast4}`  // Mask card number in logs
+    });
+
+    const subject = `MyStories Real Card Payment - ${transactionInfo.date}`;
+    const body = `
+Transaction Details:
+- Date: ${transactionInfo.date}
+- Amount: $${transactionInfo.amount}
+- Card: **** **** **** ${transactionInfo.cardLast4}
+- Promo Code: ${transactionInfo.promoCode}
+- User: ${transactionInfo.userDetails.firstName} ${transactionInfo.userDetails.lastName}
+- Email: ${transactionInfo.userDetails.email}
+
+Note: This is an automated email sent for backoffice refund processing.
+It is not part of the website testing validation.
+    `.trim();
+
+    // Send to temporary recipient for now
+    await this.client!.sendEmail(await this.getInboxId(EMAIL_CONFIG.REFUNDS.TEMP_RECIPIENT), {
+      to: [EMAIL_CONFIG.REFUNDS.TEMP_RECIPIENT],
+      subject,
+      body
+    });
+    
+    console.log('✅ Backoffice refund info email sent successfully');
   }
 
   async verifyWelcomeProcess(page: Page, userDetails: StoryTellerDetails, testInfo: TestInfo) {

@@ -15,6 +15,11 @@ export const PRICES = {
       code: 'MH100',        // Code to apply in tests
       discountPercentage: '100',   // Full discount (100%)
       finalPrice: '0.00'           // Expected price after discount
+    },
+    REAL_CARD_TEST: {
+      code: 'MH99',         // Special code for real card tests
+      discountPercentage: '99',    // 99% discount
+      finalPrice: '1.00'          // $1.00 final price
     }
   },
   

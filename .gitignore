@@ -9,6 +9,9 @@ package-lock.json
 test-results/
 playwright-report/
 
+# Real card details (never commit)
+tests/data/real-card.yml
+
 # Visual testing artifacts
 visual-testing/actual/
 visual-testing/diff/

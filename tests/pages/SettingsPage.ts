@@ -28,6 +28,8 @@ export class SettingsPage extends BasePage {
     await this.openAccountMenu();
     console.log('Clicking logout button');
     await this.logoutButton.click();
+    // Wait for logout to complete and redirect to home page
+    await this.page.waitForURL(URLS.HOME);
     console.log('Logout completed');
   }
 

@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { STATES_REQUIRING_ACKNOWLEDGMENT } from '../data/prices.config';
 
@@ -26,7 +26,7 @@ export class StoryDetailsPage extends BasePage {
   private readonly storytellerLastName = this.page.getByRole('textbox', { name: 'Last name' });
   private readonly storytellerEmail = this.page.getByRole('textbox', { name: 'example@example.com' });
   private readonly giftDate = this.page.getByRole('textbox', { name: 'Pick a date' });
-  private readonly giftGiverName = this.page.getByRole('textbox', { name: 'Write your name' });
+  private readonly giftGiverName = this.page.locator('#root > div > div.layout-content > div > div > div > div.ant-col.ant-col-xs-24.ant-col-sm-24.ant-col-md-12.ant-col-lg-16.css-jaljq0 > div > div:nth-child(2) > div > div > div > div:nth-child(2) > form > div > div:nth-child(3) > div > div:nth-child(2) > div > div > div.ant-col.ant-form-item-control.css-jaljq0 > div > div > input');
   private readonly giftMessage = this.page.getByText('I wanted to give you');
   private readonly continueButton = this.page.getByRole('button', { name: 'Continue' });
 
@@ -35,8 +35,8 @@ export class StoryDetailsPage extends BasePage {
   private readonly giverFirstName = this.page.getByRole('textbox', { name: 'First name' });
   private readonly giverLastName = this.page.getByRole('textbox', { name: 'Last name' });
   private readonly giverEmail = this.page.getByRole('textbox', { name: 'example@example.com' });
-  private readonly countryDropdown = this.page.locator('.row > .ant-form-item > .ant-row > div:nth-child(2) > .ant-form-item-control-input > .ant-form-item-control-input-content > .ant-select > .ant-select-selector > .ant-select-selection-wrap > .ant-select-selection-item');
-  private readonly stateDropdown = this.page.locator('div:nth-child(2) > .ant-row > div:nth-child(2) > .ant-form-item-control-input > .ant-form-item-control-input-content > .ant-select > .ant-select-selector > .ant-select-selection-wrap > .ant-select-selection-item');
+  private readonly countryDropdown = this.page.locator('#yourDetailsStep > div > div:nth-child(2) > div > div:nth-child(4) > div > div > div > div.ant-col.ant-form-item-control.css-jaljq0 > div > div > div > div > span > span.ant-select-selection-item');
+  private readonly stateDropdown = this.page.locator('#yourDetailsStep > div > div:nth-child(2) > div > div:nth-child(4) > div > div.ant-form-item.state-form-item.css-jaljq0 > div > div.ant-col.ant-form-item-control.css-jaljq0 > div > div > div > div > span > span.ant-select-selection-item');
   private readonly subscriptionAcknowledgment = this.page.getByRole('checkbox', { name: 'I acknowledge that this is a' });
   private readonly checkoutButton = this.page.getByRole('button', { name: /Continue to checkout/i });
 
@@ -78,6 +78,10 @@ export class StoryDetailsPage extends BasePage {
     if (details.giftGiverName) {
       console.log('Adding gift giver name:', details.giftGiverName);
       await this.giftGiverName.fill(details.giftGiverName);
+    } else {
+      // Gift giver name is required
+      console.log('Adding default gift giver name');
+      await this.giftGiverName.fill('From ' + details.firstName);
     }
 
     if (details.message) {
@@ -85,54 +89,37 @@ export class StoryDetailsPage extends BasePage {
       await this.giftMessage.fill(details.message);
     }
 
+    // Wait for button to be enabled
+    await this.page.waitForTimeout(1000); // Wait for form validation
+    const isDisabled = await this.continueButton.getAttribute('disabled');
+    if (isDisabled) {
+      throw new Error('Continue button is still disabled after filling all required fields');
+    }
     await this.continueButton.click();
     console.log('Submitted storyteller details');
   }
 
-  private async trySelectState(state: string, maxAttempts = 3): Promise<boolean> {
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        console.log(`Attempt ${attempt} to select state: ${state}`);
-        
-        // Close dropdown if it's open (for retry attempts)
-        if (attempt > 1) {
-          await this.page.keyboard.press('Escape');
-          await this.page.waitForTimeout(500);
-        }
-        
-        // Open dropdown
-        await this.stateDropdown.click();
-        await this.page.waitForTimeout(500);
-        
-        // Try to find and click the state
-        const stateOption = this.page.getByText(state, { exact: true });
-        if (await stateOption.isVisible()) {
-          await stateOption.click();
-          console.log(`Successfully selected state: ${state}`);
-          return true;
-        }
-        
-        // If state not found, try scrolling through all states
-        console.log('State not immediately visible, scrolling through list...');
-        await this.page.keyboard.press('Home'); // Start from the top
-        
-        // Try scrolling down until we find the state or reach the end
-        for (let scroll = 0; scroll < 50; scroll++) {
-          if (await stateOption.isVisible()) {
-            await stateOption.click();
-            console.log(`Successfully selected state: ${state} after ${scroll} scrolls`);
-            return true;
-          }
-          await this.page.keyboard.press('ArrowDown');
-          await this.page.waitForTimeout(100);
-        }
-        
-        console.log(`State ${state} not found in attempt ${attempt}`);
-      } catch (error) {
-        console.error(`Error selecting state in attempt ${attempt}:`, error);
-        if (attempt === maxAttempts) throw error;
+  private async selectState(state: string, maxScrolls = 50): Promise<boolean> {
+    console.log(`Selecting state: ${state}`);
+    await this.stateDropdown.click();
+    await this.page.waitForTimeout(500);
+
+    // Start from top
+    await this.page.keyboard.press('Home');
+
+    // Scroll until we find the state
+    for (let scroll = 0; scroll < maxScrolls; scroll++) {
+      const option = this.page.getByText(state, { exact: true }).first();
+      if (await option.isVisible()) {
+        await option.click();
+        console.log(`Found and selected state: ${state}`);
+        return true;
       }
+      await this.page.keyboard.press('ArrowDown');
+      await this.page.waitForTimeout(100);
     }
+    
+    console.log(`Failed to find state: ${state}`);
     return false;
   }
 
@@ -152,7 +139,7 @@ export class StoryDetailsPage extends BasePage {
 
     // Select country
     console.log('Selecting country:', details.country);
-    await this.countryDropdown.click();
+    await this.countryDropdown.first().click();
     await this.page.keyboard.type(details.country);
     await this.page.keyboard.press('Enter');
 
@@ -160,7 +147,7 @@ export class StoryDetailsPage extends BasePage {
     if (details.country === 'United States') {
       console.log('US selected, handling state selection');
       if (details.state) {
-        const stateSelected = await this.trySelectState(details.state);
+        const stateSelected = await this.selectState(details.state);
         if (!stateSelected) {
           throw new Error(`Failed to select state: ${details.state}`);
         }

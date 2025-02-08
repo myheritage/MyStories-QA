@@ -72,6 +72,22 @@ export const EMAIL_CONFIG = {
     STORIES: 'stories@mystories.com',
     QUESTIONS: 'questions@stories.mystories.com'
   },
+
+  /**
+   * Backoffice Refund Email Configuration
+   * 
+   * IMPORTANT: This is for internal backoffice use only, not part of website testing.
+   * When real cards are used in tests, we send transaction details to a dedicated
+   * email to help the backoffice team process refunds. This ensures we have a record
+   * of all test charges but is not part of the actual website validation.
+   */
+  REFUNDS: {
+    MAILSLURP: {
+      email: 'mystoris_refunds@mailslurp.biz',
+      inboxId: 'fc15907d-5838-4ca0-81ab-321fad83dbfe'
+    },
+    TEMP_RECIPIENT: 'or.grushka@myeritage.com'  // Temporary until MailSlurp setup
+  },
   /**
    * Expected email subject patterns
    * Supports placeholders for dynamic content
