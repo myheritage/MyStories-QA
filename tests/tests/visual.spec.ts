@@ -25,7 +25,7 @@ if (activePages.length === 0) {
 }
 
 test.describe('Visual Regression Tests', {
-  tag: ['@Full', '@Visual', '@Sanity']
+  tag: ['@Full', '@Visual']
 }, () => {
   const visualHelper = new VisualTestHelper();
 
