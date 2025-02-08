@@ -54,7 +54,7 @@ test.describe('Questions Flow', {
    * @tags @Sanity
    */
   test('complete answer workflow', {
-    tag: ['@Full', '@Sanity', '@Questions']
+    tag: ['@Full', '@Questions']
   }, async ({ page }, testInfo) => {
     try {
       // Generate test data

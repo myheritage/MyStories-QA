@@ -7,10 +7,10 @@ import { LinkCheckerHelper, LinkCheckResult } from '../helpers/LinkCheckerHelper
 import path from 'path';
 
 test.describe('Homepage Basic Validations', {
-  tag: ['@Full', '@Sanity']
+  tag: ['@Full']
 }, () => {
   test('should have correct window title', {
-    tag: ['@CD']
+    tag: ['@CD', '@Sanity']
   }, async ({ page }) => {
     const homePage = new HomePage(page);
     await homePage.goto();
@@ -18,7 +18,7 @@ test.describe('Homepage Basic Validations', {
   });
 
   test('should have favicon', {
-    tag: ['@CD']
+    tag: ['@CD', '@Sanity']
   }, async ({ page }) => {
     const homePage = new HomePage(page);
     await homePage.goto();
@@ -50,7 +50,7 @@ test.describe('Homepage Basic Validations', {
   });
 
   test('should have proper HTTP status and headers', {
-    tag: ['@CD']
+    tag: ['@CD', '@Sanity']
   }, async ({ page }) => {
     const response = await page.goto(URLS.HOME);
     expect(response?.status()).toBe(200);
@@ -81,7 +81,7 @@ test.describe('Homepage Basic Validations', {
   });
 
   test('cookie consent banner functionality', {
-    tag: ['@CD']
+    tag: ['@CD', '@Sanity']
   }, async ({ page }) => {
     console.log('Starting cookie consent banner test...');
     const homePage = new HomePage(page);
