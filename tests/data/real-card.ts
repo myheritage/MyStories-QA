@@ -16,7 +16,7 @@ import * as fs from 'fs';
 import * as yaml from 'yaml';
 import { StripeCard } from '../pages/PaymentPage';
 
-function loadRealCardConfig(): StripeCard {
+export function getRealCard(): StripeCard {
   try {
     const configPath = __dirname + '/real-card.yml';
     const configContent = fs.readFileSync(configPath, 'utf8');
@@ -39,5 +39,3 @@ function loadRealCardConfig(): StripeCard {
     );
   }
 }
-
-export const REAL_CARD = loadRealCardConfig();

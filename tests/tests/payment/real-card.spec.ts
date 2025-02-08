@@ -7,7 +7,7 @@ import { PaymentPage } from '../../pages/PaymentPage';
 import { TestDataGenerator } from '../../helpers/TestDataGenerator';
 import { PRICES } from '../../data/prices.config';
 // Import real card details from YAML config loader
-import { REAL_CARD } from '../../data/real-card';
+import { getRealCard } from '../../data/real-card';
 import { EmailHandler, EmailMode } from '../../helpers/EmailHandler';
 import { EMAIL_CONFIG } from '../../data/test.config';
 
@@ -94,7 +94,7 @@ test.describe('Real Card Payment', { tag: '@real-card' }, () => {
     console.log('✅ Price verified as $1.00, proceeding with payment...');
 
     // Complete payment with real card using human-like interactions
-    await paymentPage.fillPaymentDetails(REAL_CARD, true);
+    await paymentPage.fillPaymentDetails(getRealCard(), true);
     console.log('Waiting for price updates to complete...');
     await page.waitForTimeout(2000);
     
@@ -115,7 +115,7 @@ test.describe('Real Card Payment', { tag: '@real-card' }, () => {
       const transactionInfo = {
         date: new Date().toISOString(),
         amount: PRICES.PROMO_CODES.REAL_CARD_TEST.finalPrice,
-        cardLast4: REAL_CARD.number.slice(-4),
+        cardLast4: getRealCard().number.slice(-4),
         promoCode: PRICES.PROMO_CODES.REAL_CARD_TEST.code,
         userDetails: {
           firstName: userDetails.firstName,
