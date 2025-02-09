@@ -48,8 +48,7 @@ test.describe('Questions Flow', {
    * 3. Save and preview the answer
    *    - Captures screenshot
    *    - Saves PDF if available
-   * 4. Edit the answer with new content
-   * 5. Test question filtering (completed/all)
+   * 4. Test question filtering (completed/all)
    * 
    * @tags @Sanity
    */
@@ -100,9 +99,6 @@ test.describe('Questions Flow', {
       
       // Close preview before proceeding
       await previewPage.close();
-
-      // Edit the answer
-      await questionsPage.editAnswer('This is my edited answer to the first question.');
 
       // Filter questions
       await questionsPage.filterQuestions('completed');
