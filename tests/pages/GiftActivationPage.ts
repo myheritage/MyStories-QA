@@ -1,5 +1,6 @@
 import { Page, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { URLS } from '../data/test.config';
 
 export class GiftActivationPage extends BasePage {
   // Locators
@@ -31,6 +32,6 @@ export class GiftActivationPage extends BasePage {
   async completeActivation() {
     console.log('Completing gift activation');
     await this.continueButton.click();
-    await this.page.waitForURL('https://app.mystories.com/');
+    await this.page.waitForURL(URLS.APP);
   }
 }

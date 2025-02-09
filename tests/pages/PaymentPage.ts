@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test';
+import { URLS } from '../data/test.config';
 import { BasePage } from './BasePage';
 import { PRICES } from '../data/prices.config';
 
@@ -356,7 +357,7 @@ export class PaymentPage extends BasePage {
     await this.visitDashboardButton.waitFor({ state: 'visible' });
     console.log('Clicking Visit your dashboard button');
     await Promise.all([
-      this.page.waitForURL('https://app.mystories.com/'),
+      this.page.waitForURL(URLS.APP),
       this.visitDashboardButton.click()
     ]);
   }

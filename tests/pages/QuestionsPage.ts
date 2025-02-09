@@ -1,4 +1,5 @@
 import { Locator, Page, expect } from '@playwright/test';
+import { URLS } from '../data/test.config';
 import { BasePage } from './BasePage';
 import { ScreenshotHelper } from '../helpers/ScreenshotHelper';
 
@@ -67,7 +68,7 @@ export class QuestionsPage extends BasePage {
 
   // Navigation and initialization
   async waitForDashboard() {
-    await this.page.waitForURL('https://app.mystories.com/');
+    await this.page.waitForURL(URLS.APP);
     await this.myStoriesHeading.waitFor({ state: 'visible' });
     console.log('Dashboard loaded');
   }
