@@ -1,4 +1,4 @@
-import { Page, expect } from '@playwright/test';
+import { Locator, Page, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { ScreenshotHelper } from '../helpers/ScreenshotHelper';
 
@@ -27,8 +27,11 @@ export class QuestionsPage extends BasePage {
   private readonly addQuestionsDoneButton = this.questionsDialog.getByRole('button', { name: 'Done' });
   private readonly customQuestionDoneButton = this.page.getByLabel('Add your own question').getByRole('button', { name: 'Done' });
   
-  // Question editing
-  private readonly answerEditor = this.page.locator('#root > div > div.layout-content > div > div.inner > div > div.story-section > div.answer-input-wrapper > div > p');
+  // Editor elements
+  private readonly editorContainer = this.page.locator('#root > div > div.layout-content > div > div.inner > div > div.story-section > div.answer-input-wrapper');
+  private readonly answerEditor = this.editorContainer.locator('[contenteditable="true"]').first();
+  
+  // Question editing controls
   private readonly questionOptionsButton = (index: number) => this.page.locator(`div:nth-child(${index}) > .story-quick-actions > div:nth-child(3) > .ant-dropdown-trigger > svg`);
   private readonly editQuestionOption = this.page.getByText('Edit question');
   private readonly deleteQuestionOption = this.page.getByRole('menuitem', { name: 'Delete Delete question' }).locator('span');
@@ -43,29 +46,121 @@ export class QuestionsPage extends BasePage {
     super(page);
   }
 
+  // Private helper methods
+  private async waitForEditorReady() {
+    console.log('Waiting for editor to be ready');
+    await this.editorContainer.waitFor({ state: 'visible', timeout: 5000 });
+    await this.answerEditor.waitFor({ state: 'visible', timeout: 5000 });
+    
+    // Wait for any animations
+    await this.page.waitForTimeout(300);
+    
+    // Wait for editor to be interactive
+    await this.page.waitForFunction(() => {
+      const wrapper = document.querySelector('#root > div > div.layout-content > div > div.inner > div > div.story-section > div.answer-input-wrapper');
+      const editor = wrapper?.querySelector('[contenteditable="true"]');
+      return editor && window.getComputedStyle(editor).display !== 'none';
+    }, { timeout: 5000 });
+    
+    console.log('Editor is ready');
+  }
+
+  // Navigation and initialization
   async waitForDashboard() {
     await this.page.waitForURL('https://app.mystories.com/');
     await this.myStoriesHeading.waitFor({ state: 'visible' });
     console.log('Dashboard loaded');
   }
 
+  // Answer writing and editing
   async startWriting(questionIndex: number) {
     console.log(`Starting to write answer for question ${questionIndex}`);
-    await this.startWritingButton(questionIndex).click();
+    
+    // Click and wait for navigation
+    await Promise.all([
+      this.page.waitForNavigation({ waitUntil: 'networkidle' }),
+      this.startWritingButton(questionIndex).click()
+    ]);
+    
+    // Wait for editor to be ready
+    await this.waitForEditorReady();
+    
+    // Log editor state for debugging
+    const editorState = await this.answerEditor.evaluate((element: HTMLElement) => {
+      const style = window.getComputedStyle(element);
+      return {
+        isVisible: style.display !== 'none' && style.visibility !== 'hidden',
+        isContentEditable: element.isContentEditable,
+        hasParentEditor: !!element.closest('[contenteditable="true"]'),
+        isSlateNode: element.hasAttribute('data-slate-node')
+      };
+    });
+    console.log('Editor state:', editorState);
+    
+    console.log('Editor is ready and initialized');
   }
 
   async writeAnswer(text: string) {
     console.log('Writing answer:', text);
-    // Click the editor to focus it
-    await this.answerEditor.click();
     
-    // Type the text using keyboard
-    await this.page.keyboard.type(text);
+    // Wait for editor to be ready
+    await this.waitForEditorReady();
+    
+    // Try to focus the editor multiple times if needed
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      console.log(`Focus attempt ${attempt}/3`);
+      
+      // Focus and click the editor
+      await this.answerEditor.click();
+      await this.answerEditor.evaluate((element: HTMLElement) => {
+        (element as HTMLElement & { isContentEditable: boolean }).focus();
+      });
+      
+      // Verify we have focus and can type
+      const hasFocus = await this.answerEditor.evaluate((el: HTMLElement) => {
+        const isActive = document.activeElement === el;
+        const isEditable = el.isContentEditable;
+        const hasParentEditor = !!el.closest('[contenteditable="true"]');
+        console.log('Focus check:', { isActive, isEditable, hasParentEditor });
+        return isActive && isEditable && hasParentEditor;
+      });
+      if (hasFocus) {
+        console.log('Successfully focused editor');
+        break;
+      }
+      
+      if (attempt === 3) {
+        console.error('Failed to focus editor after 3 attempts');
+        throw new Error('Could not focus editor');
+      }
+      
+      // Wait briefly before next attempt
+      await this.page.waitForTimeout(100);
+    }
+    
+    // Type the new text with a delay to ensure stability
+    await this.page.keyboard.type(text, { delay: 50 });
+    
+    // Wait a moment for Slate to process the changes
+    await this.page.waitForTimeout(100);
+    
+    // Verify text was entered
+    const content = await this.answerEditor.textContent();
+    if (!content?.includes(text)) {
+      console.error('Editor content:', content);
+      throw new Error('Failed to enter text into editor');
+    }
+    
+    console.log('Answer text entered successfully');
   }
 
   async saveAnswer() {
     console.log('Saving answer');
     await this.saveButton.click();
+    
+    // Wait for save to complete and editor to update
+    await this.page.waitForLoadState('networkidle');
+    console.log('Save completed');
   }
 
   async previewAnswer() {
@@ -89,13 +184,22 @@ export class QuestionsPage extends BasePage {
     // First go back to main questions page
     await this.goBack();
     
-    // Now click edit and proceed with changes
-    await this.editButton.click();
-    await this.answerEditor.click();
-    await this.page.keyboard.type(text);
+    // Click edit and wait for navigation
+    await Promise.all([
+      this.page.waitForNavigation({ waitUntil: 'networkidle' }),
+      this.editButton.click()
+    ]);
+    
+    // Wait for editor to be ready
+    await this.waitForEditorReady();
+    console.log('Editor is ready for editing');
+    
+    // Reuse writeAnswer logic for consistency
+    await this.writeAnswer(text);
     await this.saveAnswer();
   }
 
+  // Question management
   async editQuestion(index: number, newText: string) {
     console.log(`Editing question ${index} to: ${newText}`);
     await this.questionOptionsButton(index).click();
@@ -163,6 +267,7 @@ export class QuestionsPage extends BasePage {
     await question.waitFor({ state: 'visible' });
   }
 
+  // Filtering and navigation
   async filterQuestions(filter: 'all' | 'not-started' | 'completed') {
     console.log('Filtering questions:', filter);
     
@@ -211,9 +316,16 @@ export class QuestionsPage extends BasePage {
 
   async goBack() {
     console.log('Going back to main questions page');
-    await this.backButton.click();
+    // Wait for navigation after clicking back
+    await Promise.all([
+      this.page.waitForNavigation({ waitUntil: 'networkidle' }),
+      this.backButton.click()
+    ]);
+    // Wait for page to stabilize
+    await this.page.waitForLoadState('domcontentloaded');
   }
 
+  // Verification methods
   async verifyLoggedInUser(firstName: string) {
     console.log('Verifying logged in as:', firstName);
     await this.myStoriesHeading.waitFor({ state: 'visible' });
@@ -238,14 +350,13 @@ export class QuestionsPage extends BasePage {
   async verifyAnswerText(question: string, expectedAnswer: string): Promise<void> {
     console.log('Verifying answer for question:', question);
     
-    // Wait for the question to be visible
-    const questionTitle = this.page.locator('.title', { hasText: question });
-    await questionTitle.waitFor({ state: 'visible' });
-
-    // Find the answer text within the question's container
-    const answerText = await this.page
-      .locator(`div:has(> .title:has-text("${question}"))`)
-      .locator('[data-slate-node="element"]')
+    // Wait for the editor to be ready
+    await this.waitForEditorReady();
+    
+    // Get the answer text
+    const answerText = await this.editorContainer
+      .locator('[contenteditable="true"]')
+      .first()
       .textContent();
 
     // Verify the answer matches
