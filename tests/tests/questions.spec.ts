@@ -54,7 +54,7 @@ test.describe('Questions Flow', {
    * @tags @Sanity
    */
   test('complete answer workflow', {
-    tag: ['@Full', '@Questions']
+    tag: ['@Sanity']
   }, async ({ page }, testInfo) => {
     try {
       // Generate test data
@@ -129,7 +129,7 @@ test.describe('Questions Flow', {
    * @tags @Full
    */
   test('question management', {
-    tag: ['@Full', '@Questions']
+    tag: ['@Sanity']
   }, async ({ page }, testInfo) => {
     try {
       // Generate test data
