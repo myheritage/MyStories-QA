@@ -11,9 +11,14 @@
 /**
  * Application URLs for different environments
  * Can be overridden via environment variables
+ * 
+ * Note: HOME URL includes utm_campaign=test parameter to:
+ * - Distinguish automated test traffic from real user traffic
+ * - Prevent test flows from affecting production analytics
+ * - Enable filtering of test sessions in analytics platforms
  */
 export const URLS = {
-  HOME: process.env.HOME_URL || 'https://www.mystories.com',
+  HOME: (process.env.HOME_URL || 'https://www.mystories.com') + '?utm_campaign=test',
   APP: process.env.APP_URL || 'https://app.mystories.com',
   LOGIN: process.env.LOGIN_URL || 'https://app.mystories.com/login',
   SETTINGS: process.env.SETTINGS_URL || 'https://app.mystories.com/settings'
