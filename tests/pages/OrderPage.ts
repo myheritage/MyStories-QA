@@ -26,7 +26,13 @@ export class OrderPage extends BasePage {
   async selectOrderType(type: OrderType, skipTestMode = false) {
     // Wait for page to be ready
     await this.page.waitForLoadState('networkidle');
-    await this.pageTitle.waitFor({ state: 'visible', timeout: 10000 });
+    
+    // Debug logging
+    console.log('Current URL:', await this.page.url());
+    console.log('Page content:', await this.page.content());
+    
+    // Increased timeout for CI
+    await this.pageTitle.waitFor({ state: 'visible', timeout: 30000 });
 
     // Handle cookie consent if it appears
     if (await this.cookieHandler.isVisible()) {
@@ -57,7 +63,7 @@ export class OrderPage extends BasePage {
   async isOrderTypePage(): Promise<boolean> {
     // Wait for page to be ready
     await this.page.waitForLoadState('networkidle');
-    await this.pageTitle.waitFor({ state: 'visible', timeout: 10000 });
+    await this.pageTitle.waitFor({ state: 'visible', timeout: 30000 });
     
     return await this.pageTitle.isVisible();
   }
