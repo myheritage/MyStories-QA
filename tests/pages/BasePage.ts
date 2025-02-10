@@ -31,8 +31,15 @@ export class BasePage {
     await this.sendLinkButton.click();
   }
 
+  /**
+   * Adds test mode parameter while preserving existing URL parameters
+   * For example:
+   * Input:  https://app.mystories.com/order?utm_campaign=test
+   * Output: https://app.mystories.com/order?utm_campaign=test&coupon=testmode
+   */
   protected async addTestMode(url: string): Promise<string> {
     const urlObj = new URL(url);
+    // Keep existing params (like utm_campaign) and add testmode
     urlObj.searchParams.set('coupon', 'testmode');
     return urlObj.toString();
   }

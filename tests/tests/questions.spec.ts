@@ -53,7 +53,7 @@ test.describe('Questions Flow', {
    * @tags @Sanity
    */
   test('complete answer workflow', {
-    tag: ['@Sanity']
+    tag: ['@github-actions-debug']
   }, async ({ page }, testInfo) => {
     try {
       // Generate test data
