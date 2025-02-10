@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test';
 import { BasePage, CookieConsentOption } from './BasePage';
 import { CookieConsentHandler } from '../helpers/CookieConsentHandler';
+import { URLS } from '../data/test.config';
 
 export type OrderType = 'I will' | 'Someone else';
 
@@ -43,9 +44,9 @@ export class OrderPage extends BasePage {
     await this.nextButton.click();
     
     if (!skipTestMode) {
-      // Add test mode to URL only for non-real-card tests
-      const currentUrl = this.page.url();
-      const testModeUrl = await this.addTestMode(currentUrl);
+      // Use ORDER URL that already has utm_campaign=test
+      console.log('Starting with ORDER URL:', URLS.ORDER);
+      const testModeUrl = await this.addTestMode(URLS.ORDER);
       console.log('Navigating to sandbox URL:', testModeUrl);
       await this.page.goto(testModeUrl);
     }

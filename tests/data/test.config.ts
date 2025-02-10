@@ -21,7 +21,8 @@ export const URLS = {
   HOME: (process.env.HOME_URL || 'https://www.mystories.com') + '?utm_campaign=test',
   APP: process.env.APP_URL || 'https://app.mystories.com',
   LOGIN: process.env.LOGIN_URL || 'https://app.mystories.com/login',
-  SETTINGS: process.env.SETTINGS_URL || 'https://app.mystories.com/settings'
+  SETTINGS: process.env.SETTINGS_URL || 'https://app.mystories.com/settings',
+  ORDER: (process.env.ORDER_URL || 'https://app.mystories.com/order') + '?utm_campaign=test'
 };
 
 /**
