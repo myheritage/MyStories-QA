@@ -20,29 +20,54 @@ export class HomePage extends BasePage {
   }
 
   async goto() {
+    console.log('Going to homepage:', URLS.HOME);
     await this.page.goto(URLS.HOME);
     await this.page.waitForLoadState('domcontentloaded');
     // Wait for order button to be visible instead of networkidle
     await this.orderNowButton.waitFor({ state: 'visible', timeout: 10000 });
+    console.log('Homepage loaded');
   }
 
   async handleCookieConsent(option: CookieConsentOption) {
-    if (await this.cookieHandler.isVisible()) {
-      await this.cookieHandler.handle(option);
-    }
+    console.log('Handling cookie consent');
+    await this.cookieHandler.handle(option);
+    // Wait to confirm banner is handled
+    await this.cookieHandler.waitForHidden();
+    console.log('Cookie consent handled');
   }
 
   async startOrderFlow(cookieOption: CookieConsentOption = CookieConsentOption.ALLOW_ALL) {
+    console.log('\n=== HomePage Flow ===');
+    console.log('1. Going to homepage');
     await this.goto();
-    await this.handleCookieConsent(cookieOption);
+    console.log('Current URL:', await this.page.url());
+
+    console.log('\n2. Checking cookie consent');
+    // Wait and retry for cookie banner (10 seconds)
+    console.log('Waiting for cookie banner...');
+    const hasDialog = await this.cookieHandler.waitForVisible({ timeout: 10000 });
+    console.log('Cookie banner appeared:', hasDialog);
     
-    // Now proceed with clicking the order button
+    if (hasDialog) {
+      await this.handleCookieConsent(cookieOption);
+      // Double check banner is gone
+      const stillVisible = await this.cookieHandler.isVisible();
+      console.log('Banner still visible:', stillVisible);
+      if (stillVisible) {
+        console.log('Banner still visible, handling again...');
+        await this.handleCookieConsent(cookieOption);
+      }
+    }
+    
+    console.log('\n3. Clicking Order Now');
     await this.orderNowButton.waitFor({ state: 'visible', timeout: 10000 });
     await this.orderNowButton.click();
+    console.log('Current URL:', await this.page.url());
     
     // Wait for navigation to order page with UTM parameters
     await this.page.waitForURL(URLS.ORDER);
     await this.page.waitForLoadState('domcontentloaded');
+    console.log('Final URL:', await this.page.url());
   }
 
   async startLoginFlow(cookieOption: CookieConsentOption = CookieConsentOption.ALLOW_ALL) {

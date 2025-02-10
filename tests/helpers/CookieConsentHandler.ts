@@ -14,6 +14,10 @@ export class CookieConsentHandler {
      */
     async handle(option: CookieConsentOption): Promise<void> {
         try {
+            // Log initial state
+            console.log('\nHandling cookie consent');
+            console.log('Current URL:', await this.page.url());
+
             // Wait for cookie dialog to be visible
             await this.cookieDialog.waitFor({ state: 'visible', timeout: 10000 });
             console.log('Cookie dialog found');
@@ -26,12 +30,21 @@ export class CookieConsentHandler {
             await button.waitFor({ state: 'visible', timeout: 5000 });
             console.log(`Found ${option} button`);
             
+            // Click button
             await button.click();
             console.log(`Clicked ${option} button`);
-
-            // Verify dialog disappears
+            
+            // Wait for cookies to settle
+            console.log('Waiting for cookies to settle...');
+            await this.page.waitForTimeout(2000);
+            
+            // Wait for dialog to disappear
             await this.cookieDialog.waitFor({ state: 'hidden', timeout: 5000 });
             console.log('Cookie dialog disappeared');
+
+            // Wait for any reloads to complete
+            await this.page.waitForLoadState('domcontentloaded');
+            console.log('Final URL:', await this.page.url());
         } catch (error) {
             console.error('Error handling cookie consent:', error);
             throw error;
