@@ -40,8 +40,8 @@ export class HomePage extends BasePage {
     await this.orderNowButton.waitFor({ state: 'visible', timeout: 10000 });
     await this.orderNowButton.click();
     
-    // Wait for navigation
-    await this.page.waitForURL(/\/order/);
+    // Wait for navigation to order page with UTM parameters
+    await this.page.waitForURL(URLS.ORDER);
     await this.page.waitForLoadState('domcontentloaded');
   }
 
