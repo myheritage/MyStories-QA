@@ -146,9 +146,19 @@ test.describe('Questions Flow', {
       // Filter questions
       await questionsPage.filterQuestions('completed');
       await questionsPage.filterQuestions('all');
+
+      // Take final screenshot before test ends
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(1000); // Wait for any animations
+      await ScreenshotHelper.takeFullPageScreenshot(page, 'sanity-answer-workflow-complete');
     } catch (error) {
-      // Take screenshot before throwing
-      await ScreenshotHelper.takeFullPageScreenshot(page, 'sanity-answer-workflow-failed');
+      try {
+        // Try to take error screenshot, but don't fail if it fails
+        await ScreenshotHelper.takeFullPageScreenshot(page, 'sanity-answer-workflow-failed')
+          .catch(screenshotError => console.error('Failed to take error screenshot:', screenshotError));
+      } catch (screenshotError) {
+        console.error('Failed to take error screenshot:', screenshotError);
+      }
       throw error;
     }
   });
@@ -197,9 +207,19 @@ test.describe('Questions Flow', {
       const newQuestionText = 'What was your most memorable vacation?';
       await questionsPage.editQuestion(2, newQuestionText);
       await questionsPage.verifyQuestionExists(newQuestionText);
+
+      // Take final screenshot before test ends
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(1000); // Wait for any animations
+      await ScreenshotHelper.takeFullPageScreenshot(page, 'question-management-complete');
     } catch (error) {
-      // Take screenshot before throwing
-      await ScreenshotHelper.takeFullPageScreenshot(page, 'question-management-failed');
+      try {
+        // Try to take error screenshot, but don't fail if it fails
+        await ScreenshotHelper.takeFullPageScreenshot(page, 'question-management-failed')
+          .catch(screenshotError => console.error('Failed to take error screenshot:', screenshotError));
+      } catch (screenshotError) {
+        console.error('Failed to take error screenshot:', screenshotError);
+      }
       throw error;
     }
   });
