@@ -54,13 +54,7 @@ test.describe('Questions Flow', {
    */
   test('complete answer workflow', {
     tag: ['@github-actions-debug']
-  }, async ({ browser }, testInfo) => {
-    // Create context with popup permissions
-    const context = await browser.newContext({
-      permissions: ['popup-windows']
-    });
-    const page = await context.newPage();
-    
+  }, async ({ page }, testInfo) => {
     try {
       // Generate test data
       const userDetails = await testData.generateGiftGiver({ withState: true });
@@ -113,8 +107,6 @@ test.describe('Questions Flow', {
       // Take screenshot before throwing
       await ScreenshotHelper.takeFullPageScreenshot(page, 'complete-answer-workflow-failed');
       throw error;
-    } finally {
-      await context.close();
     }
   });
 
