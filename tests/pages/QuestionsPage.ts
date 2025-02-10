@@ -170,9 +170,13 @@ export class QuestionsPage extends BasePage {
     await this.page.waitForTimeout(5000); // Initial wait for PDF generation
     
     // Wait for popup before clicking to ensure proper event handling
+    console.log('Waiting for popup event...');
     const previewPromise = this.page.waitForEvent('popup');
+    console.log('Clicking preview button...');
     await this.previewButton.click();
+    console.log('Waiting for popup page...');
     const previewPage = await previewPromise;
+    console.log('Popup opened:', await previewPage.url());
     
     // Capture PDF and screenshot
     await ScreenshotHelper.capturePdfPage(previewPage, 'answer-preview');
