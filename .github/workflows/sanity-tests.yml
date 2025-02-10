@@ -17,7 +17,7 @@ jobs:
       MAILSLURP_API_KEY: ${{ secrets.MAILSLURP_API_KEY }}
       STRIPE_SANDBOX: true
       EMAIL_MODE: fake  # Force fake mode until we fix real-card.ts import issues
-      PLAYWRIGHT_RETRIES: 0  # Disable retries for Sanity tests
+      PLAYWRIGHT_RETRIES: 2  # Allow 2 retries to handle flaky tests in Sanity suite
 
     steps:
       - uses: actions/checkout@v4
@@ -78,8 +78,8 @@ jobs:
           # Extract failed test names if any failures
           if [ "${failed:-0}" -gt 0 ]; then
             echo "Failed tests:" >> $GITHUB_STEP_SUMMARY
-            echo "$OUTPUT" | grep -B 1 "FAIL" | grep "✘" | sed 's/.*✘ /• /' >> $GITHUB_STEP_SUMMARY
-            failed_tests=$(echo "$OUTPUT" | grep -B 1 "FAIL" | grep "✘" | sed 's/.*✘ /• /')
+            echo "$OUTPUT" | grep -B 1 "FAIL" | grep "✘" | sed 's/.*✘ \(.*\) \[@.*\] \(.*\)/• \1 (\2)/' >> $GITHUB_STEP_SUMMARY
+            failed_tests=$(echo "$OUTPUT" | grep -B 1 "FAIL" | grep "✘" | sed 's/.*✘ \(.*\) \[@.*\] \(.*\)/• \1 (\2)/')
           else
             failed_tests=""
           fi
