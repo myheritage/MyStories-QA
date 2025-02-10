@@ -26,11 +26,11 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium  # Only Chromium
+        run: npx playwright install --with-deps chrome  # Only Chrome
 
       - name: Run debug tests
         id: run-tests
-        run: npx playwright test --grep "@github-actions-debug" --project=chromium
+        run: npx playwright test --grep "@github-actions-debug" --project=Chrome
 
       - name: Upload test results
         if: always()
