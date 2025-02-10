@@ -78,8 +78,17 @@ jobs:
           # Extract failed test names if any failures
           if [ "${failed:-0}" -gt 0 ]; then
             echo "Failed tests:" >> $GITHUB_STEP_SUMMARY
-            echo "$OUTPUT" | grep -B 1 "FAIL" | grep "✘" | sed 's/.*✘ \(.*\) \[@.*\] \(.*\)/• \1 (\2)/' >> $GITHUB_STEP_SUMMARY
-            failed_tests=$(echo "$OUTPUT" | grep -B 1 "FAIL" | grep "✘" | sed 's/.*✘ \(.*\) \[@.*\] \(.*\)/• \1 (\2)/')
+            # Extract failed test names with file paths
+            failed_tests=$(echo "$OUTPUT" | awk '
+              /^  [0-9]+\) \[Chrome\] › / {
+                # Extract test file and name
+                match($0, /\[Chrome\] › ([^›]+) › ([^@]+)/)
+                file = substr($0, RSTART+11, RLENGTH-11)
+                gsub(/\s+$/, "", file)  # Trim whitespace
+                print "• " file
+              }
+            ')
+            echo "$failed_tests" >> $GITHUB_STEP_SUMMARY
           else
             failed_tests=""
           fi
