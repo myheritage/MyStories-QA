@@ -29,10 +29,7 @@ export class OrderPage extends BasePage {
     
     // Wait for page to be ready
     await this.page.waitForLoadState('networkidle');
-    
-    // Debug logging
     console.log('Current URL:', await this.page.url());
-    console.log('Page content:', await this.page.content());
     
     console.log('\n2. Checking cookie consent');
     const hasDialog = await this.cookieHandler.isVisible();

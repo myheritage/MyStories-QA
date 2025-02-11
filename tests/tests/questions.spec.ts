@@ -178,7 +178,7 @@ test.describe('Questions Flow', {
    * @tags @Full
    */
   test('question management', {
-    tag: ['@Sanity']
+    tag: ['@Full']
   }, async ({ page }, testInfo) => {
     try {
       // Generate test data
