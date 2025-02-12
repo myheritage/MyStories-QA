@@ -145,18 +145,30 @@ export class StoryDetailsPage extends BasePage {
 
     // Handle state selection if US
     if (details.country === 'United States') {
-      console.log('US selected, handling state selection');
-      if (details.state) {
-        const stateSelected = await this.selectState(details.state);
-        if (!stateSelected) {
-          throw new Error(`Failed to select state: ${details.state}`);
+      console.log('US selected, checking state field visibility');
+      const isStateVisible = await this.stateDropdown.isVisible();
+      
+      if (isStateVisible) {
+        console.log('State field is visible');
+        if (details.state) {
+          console.log(`Attempting to select state: ${details.state}`);
+          const stateSelected = await this.selectState(details.state);
+          
+          if (stateSelected) {
+            console.log(`State ${details.state} selected successfully`);
+            // Check if state requires subscription acknowledgment (only for self orders)
+            if (!isGiftOrder && STATES_REQUIRING_ACKNOWLEDGMENT.includes(details.state)) {
+              console.log(`State ${details.state} requires acknowledgment, checking box`);
+              await this.subscriptionAcknowledgment.check();
+            }
+          } else {
+            throw new Error(`Failed to select state: ${details.state}`);
+          }
+        } else {
+          throw new Error('State is required when state field is visible for US orders');
         }
-        
-        // Check if state requires subscription acknowledgment (only for self orders)
-        if (!isGiftOrder && STATES_REQUIRING_ACKNOWLEDGMENT.includes(details.state)) {
-          console.log(`State ${details.state} requires acknowledgment, checking box`);
-          await this.subscriptionAcknowledgment.check();
-        }
+      } else {
+        console.log('State field is not visible, continuing without state selection');
       }
     }
 
