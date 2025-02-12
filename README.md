@@ -6,8 +6,12 @@ Comprehensive automated testing suite for MyStories web application using Playwr
 
 ### Core Test Suites
 - **Homepage Tests**: Navigation, content verification, responsive design
-- **Self-Order Flow**: Complete purchase journey validation
-- **Gift Order Flow**: Gift purchase and recipient notification flow
+- **Self-Order Flow**: Complete purchase journey validation, including:
+  * Regular payment flow with "Pay" button
+  * 100% discount flow with "Complete order" button (no payment details needed)
+- **Gift Order Flow**: Gift purchase and recipient notification flow, including:
+  * Regular payment flow with "Pay" button
+  * 100% discount flow with "Complete order" button (no payment details needed)
 - **Cookie Consent**: Compliance and persistence testing
 - **Question Flow**: Form validation and submission testing
 

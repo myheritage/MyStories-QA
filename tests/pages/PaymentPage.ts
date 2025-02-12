@@ -63,18 +63,13 @@ export class PaymentPage extends BasePage {
   // Page locators
   private readonly promoCodeInput = this.page.getByPlaceholder('Add promotion code');
   private readonly promoCodeApplyButton = this.page.getByRole('button', { name: 'Apply' });
-  private readonly subscribeButton = this.page.getByRole('button', { name: 'Subscribe' });
-  private readonly giftSubscribeButton = this.page.getByTestId('hosted-payment-submit-button');
-  
   /**
-   * Special button that appears only for gift orders with 100% discount.
-   * When a gift order has a promo code that makes the total $0.00,
-   * the payment form changes to a simpler version without Stripe integration,
-   * showing just a "Complete order" button instead of the usual payment form.
-   * This is unique to gift orders - self orders with the same promo code
-   * still show the regular Stripe payment form.
+   * Button used for all payment scenarios:
+   * - Self orders: Shows as "Pay"
+   * - Gift orders: Shows as "Pay"
+   * - Gift orders with 100% discount: Shows as "Complete order"
    */
-  private readonly completeOrderButton = this.page.locator('#root > div > div > div.App-Payment.is-noBackground > main > div > form > div:nth-child(1) > div > div > div.PaymentForm-confirmPaymentContainer.mt4.flex-item.width-grow > div > div:nth-child(3) > button > div.SubmitButton-IconContainer');
+  private readonly payButton = this.page.locator('#root > div > div > div.App-Payment.is-noBackground > main > div > form > div:nth-child(1) > div > div > div.PaymentForm-confirmPaymentContainer.mt4.flex-item.width-grow > div > div:nth-child(3) > button > div.SubmitButton-IconContainer');
   private readonly errorMessage = this.page.locator('div').filter({ hasText: /^Your credit card was declined\. Try paying with a debit card instead\.$/ });
   private readonly visitDashboardButton = this.page.getByRole('button', { name: 'Visit your dashboard' });
 
@@ -238,7 +233,7 @@ export class PaymentPage extends BasePage {
     if (success) {
       // Wait for form to fully update after verifying $0.00 total
       console.log('Waiting for form to update after successful promo code...');
-      await this.page.waitForTimeout(5000);
+      await this.page.waitForTimeout(10000); // Increased from 5000 to 10000
     }
     return success;
   }
@@ -268,8 +263,8 @@ export class PaymentPage extends BasePage {
   private async verifyPromoCode(): Promise<boolean> {
     console.log('Waiting for discount to be applied...');
     try {
-      // Wait for any animations and price updates
-      await this.page.waitForTimeout(2000);
+      // Wait for any animations and price updates (increased for stability)
+      await this.page.waitForTimeout(5000); // Increased from 2000 to 5000
 
       // Check for error message (blocked by fraud detection)
       const errorLocator = this.page.getByText('This code is invalid');
@@ -306,13 +301,16 @@ export class PaymentPage extends BasePage {
   /**
    * Complete the payment process, handling both regular payments and special cases.
    * 
-   * For gift orders with 100% discount (total = $0.00), the payment form changes
-   * to a simpler version without Stripe integration. In this case, we just need
-   * to click the "Complete order" button. This is unique to gift orders - 
-   * self orders with the same promo code still use the regular Stripe payment form.
+   * The payment button has different text based on the scenario:
+   * - Regular orders (self/gift): Shows "Pay"
+   * - 100% discounted orders: Shows "Complete order"
    * 
+   * For orders with 100% discount (total = $0.00), the payment form changes
+   * to a simpler version without Stripe integration, showing just the button.
    * For all other cases (regular payments or non-zero totals), we use the standard
-   * Stripe payment form with either the subscribe or gift subscribe button.
+   * Stripe payment form before clicking the button.
+   * 
+   * Note: All scenarios use the same button locator, only the button text changes.
    */
   async completePayment(card: StripeCard, isGiftOrder = false) {
     console.log('Starting payment process...');
@@ -320,27 +318,21 @@ export class PaymentPage extends BasePage {
     // Get current total amount
     const total = await this.getTotalAmount();
     
-    if (isGiftOrder && total === '$0.00') {
-      // For gift orders with 100% discount
-      console.log('Gift order with 100% discount, clicking complete order button');
-      
-      console.log('Clicking complete order button');
-      await this.completeOrderButton.click();
+    if (total === '$0.00') {
+      // For 100% discounted orders (both self and gift)
+      console.log('Order with 100% discount, clicking complete order button');
+      await this.payButton.waitFor({ state: 'visible', timeout: 5000 });
+      await this.payButton.click();
     } else {
       // Regular payment flow
       await this.fillPaymentDetails(card);
       console.log('Waiting for price updates to complete...');
       await this.page.waitForTimeout(2000);
       
-      if (isGiftOrder) {
-        console.log('Clicking gift subscribe button');
-        await this.giftSubscribeButton.waitFor({ state: 'visible', timeout: 5000 });
-        await this.giftSubscribeButton.click();
-      } else {
-        console.log('Clicking subscribe button');
-        await this.subscribeButton.waitFor({ state: 'visible', timeout: 5000 });
-        await this.subscribeButton.click();
-      }
+      // Regular payment flow - same button for both self and gift orders
+      console.log('Clicking pay button');
+      await this.payButton.waitFor({ state: 'visible', timeout: 5000 });
+      await this.payButton.click();
     }
 
     if (card.scenario === 'success') {
