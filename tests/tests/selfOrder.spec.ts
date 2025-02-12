@@ -36,12 +36,11 @@ test.describe('Self Order Flow', {
     await orderPage.selectOrderType('I will');
     console.log('Selected "I will" option');
     
-    // Generate and fill in user details
+    // Generate and fill in user details (state field is not used in current version)
     const userDetails = await testData.generateStoryTeller();
     await storyDetailsPage.fillGiftGiverDetails({
       ...userDetails,
       country: 'United States',
-      state: 'California',
       copies: 1
     });
     console.log('Filled in user details');
@@ -105,7 +104,6 @@ test.describe('Self Order Flow', {
     await storyDetailsPage.fillGiftGiverDetails({
       ...userDetails,
       country: 'United States',
-      state: 'Arizona',
       copies: 1
     });
     console.log('Filled in user details');
@@ -148,15 +146,16 @@ test.describe('Self Order Flow', {
     console.log(`Initial price: ${initialPrice}, Expected: $${expectedPrice}`);
     expect(initialPrice).toContain(`$${expectedPrice}`);
 
-    // Fill payment details first
-    await paymentPage.fillPaymentDetails(stripeTestCards.success);
-    console.log('Payment details filled');
-
-    // Apply promo code and verify
+    // Apply promo code first (no payment details needed for 100% discount)
     await paymentPage.applyPromoCode(PRICES.PROMO_CODES.FULL_DISCOUNT.code);
     console.log('Applied promo code:', PRICES.PROMO_CODES.FULL_DISCOUNT.code);
 
-    // Complete payment
+    // Verify total is $0.00 and button changed to "Complete order"
+    const finalPrice = await paymentPage.getTotalAmount();
+    console.log('Final price after discount:', finalPrice);
+    expect(finalPrice).toBe('$0.00');
+
+    // Complete order (no payment details needed)
     await paymentPage.completePayment(stripeTestCards.success);
     await expect(page).toHaveURL(/\/order\/success/);
     console.log('Order completed successfully with promo code');
