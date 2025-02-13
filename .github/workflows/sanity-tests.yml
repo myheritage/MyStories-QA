@@ -120,7 +120,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "*Sanity Tests ${{ job.status == 'success' && '✅ PASSED' || '❌ FAILED' }}*\n\n*Run Details:*\n• Tests: ${{ steps.run-tests.outputs.passed }} passed, ${{ steps.run-tests.outputs.failed }} failed, ${{ steps.run-tests.outputs.skipped }} skipped\n• Duration: ${{ steps.run-tests.outputs.duration }}s\n• Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n• Report: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload-results.outputs.artifact-id }}${{ steps.run-tests.outputs.failed != '0' && '\n\n*Failed Tests:*\n' || '' }}${{ steps.run-tests.outputs.failed_tests }}"
+              "text": "*Sanity Tests ${{ job.status == 'success' && '✅ PASSED' || '❌ FAILED' }}*\n\n*Run Details:*\n• Tests: ${{ steps.run-tests.outputs.passed }} passed, ${{ steps.run-tests.outputs.failed }} failed, ${{ steps.run-tests.outputs.skipped }} skipped\n• Duration: ${{ steps.run-tests.outputs.duration }}s\n• Run: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>\n• Report: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload-results.outputs.artifact-id }}|Download Report>${{ steps.run-tests.outputs.failed != '0' && '\n\n*Failed Tests:*\n' || '' }}${{ steps.run-tests.outputs.failed_tests }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
