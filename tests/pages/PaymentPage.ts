@@ -69,7 +69,7 @@ export class PaymentPage extends BasePage {
    * - Gift orders: Shows as "Pay"
    * - Gift orders with 100% discount: Shows as "Complete order"
    */
-  private readonly payButton = this.page.locator('#root > div > div > div.App-Payment.is-noBackground > main > div > form > div:nth-child(1) > div > div > div.PaymentForm-confirmPaymentContainer.mt4.flex-item.width-grow > div > div:nth-child(3) > button > div.SubmitButton-IconContainer');
+  private readonly payButton = this.page.getByTestId('hosted-payment-submit-button');
   private readonly errorMessage = this.page.locator('div').filter({ hasText: /^Your credit card was declined\. Try paying with a debit card instead\.$/ });
   private readonly visitDashboardButton = this.page.getByRole('button', { name: 'Visit your dashboard' });
 
@@ -98,6 +98,39 @@ export class PaymentPage extends BasePage {
     await this.checkoutContainer.waitFor({ state: 'visible', timeout: 10000 });
     console.log('Payment form is ready');
     return true;
+  }
+
+  /**
+   * Wait for pay button to be visible and enabled
+   */
+  private async waitForPayButton() {
+    console.log('Waiting for pay button...');
+    
+    // Try multiple times to find and click the pay button
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      console.log(`Attempt ${attempt}/3 to find pay button`);
+      
+      try {
+        await this.payButton.waitFor({ 
+          state: 'visible', 
+          timeout: 10000 
+        });
+        
+        // Log button state for debugging
+        const isEnabled = await this.payButton.isEnabled();
+        const text = await this.payButton.textContent();
+        console.log('Found button:', {
+          text,
+          isEnabled
+        });
+        
+        return;
+      } catch (error) {
+        if (attempt === 3) throw error;
+        console.log('Button not ready, waiting before retry...');
+        await this.page.waitForTimeout(2000);
+      }
+    }
   }
 
   /**
@@ -321,7 +354,7 @@ export class PaymentPage extends BasePage {
     if (total === '$0.00') {
       // For 100% discounted orders (both self and gift)
       console.log('Order with 100% discount, clicking complete order button');
-      await this.payButton.waitFor({ state: 'visible', timeout: 5000 });
+      await this.waitForPayButton();
       await this.payButton.click();
     } else {
       // Regular payment flow
@@ -331,7 +364,7 @@ export class PaymentPage extends BasePage {
       
       // Regular payment flow - same button for both self and gift orders
       console.log('Clicking pay button');
-      await this.payButton.waitFor({ state: 'visible', timeout: 5000 });
+      await this.waitForPayButton();
       await this.payButton.click();
     }
 
