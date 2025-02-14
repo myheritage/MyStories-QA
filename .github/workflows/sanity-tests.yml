@@ -38,51 +38,73 @@ jobs:
         id: run-tests
         run: |
           start_time=$(date +%s)
-
+          
+          # Log email mode for debugging
           echo "EMAIL_MODE is set to: $EMAIL_MODE"
           echo "MAILSLURP_API_KEY is ${MAILSLURP_API_KEY:+set}${MAILSLURP_API_KEY:-not set}"
-
-          # Run Playwright tests and save structured JSON report
+          
+          # Run tests and capture output
           if [ "$EMAIL_MODE" = "mailslurp" ] && [ -n "$MAILSLURP_API_KEY" ]; then
             echo "Running all tests including email tests (MailSlurp configured)"
-            npx playwright test --grep "@Sanity" --grep-invert "@real-card" --project=Chrome --reporter=json > results.json
+            if OUTPUT=$(npx playwright test --grep "@Sanity" --grep-invert "@real-card" --project=Chrome 2>&1); then
+              status="success"
+            else
+              status="failure"
+              # Show test output on failure for debugging
+              echo "Test output:"
+              echo "$OUTPUT"
+            fi
           else
             echo "Running tests without email tests (MailSlurp not configured or disabled)"
-            npx playwright test --grep "@Sanity" --grep-invert "@Emails|@real-card" --project=Chrome --reporter=json > results.json
+            if OUTPUT=$(npx playwright test --grep "@Sanity" --grep-invert "@Emails|@real-card" --project=Chrome 2>&1); then
+              status="success"
+            else
+              status="failure"
+              # Show test output on failure for debugging
+              echo "Test output:"
+              echo "$OUTPUT"
+            fi
           fi
-
-          status=$?
+          
+          # Calculate duration
           end_time=$(date +%s)
           duration=$((end_time - start_time))
-
-          # Extract test summary from JSON report
-          passed=$(jq '.summary.passed' results.json)
-          failed=$(jq '.summary.failed' results.json)
-          skipped=$(jq '.summary.skipped' results.json)
-          total=$((passed + failed + skipped))
-
-          # Extract failed test names
-          if [ "$failed" -gt 0 ]; then
+          
+          # Extract test summary
+          passed=$(echo "$OUTPUT" | grep -o '[0-9]* passed' | awk '{print $1}')
+          failed=$(echo "$OUTPUT" | grep -o '[0-9]* failed' | awk '{print $1}')
+          skipped=$(echo "$OUTPUT" | grep -o '[0-9]* skipped' | awk '{print $1}')
+          
+          # Extract failed test names if any failures
+          if [ "${failed:-0}" -gt 0 ]; then
             echo "Failed tests:" >> $GITHUB_STEP_SUMMARY
-            failed_tests=$(jq -r '.suites[].specs[] | select(.tests[].results[].status == "failed") | "• " + .title' results.json)
+            # Extract failed test names with file paths
+            failed_tests=$(echo "$OUTPUT" | awk '
+              /^  [0-9]+\) \[Chrome\] › / {
+                # Extract test file and name
+                match($0, /\[Chrome\] › ([^›]+) › ([^@]+)/)
+                file = substr($0, RSTART+11, RLENGTH-11)
+                gsub(/\s+$/, "", file)  # Trim whitespace
+                print "• " file
+              }
+            ')
             echo "$failed_tests" >> $GITHUB_STEP_SUMMARY
           else
             failed_tests=""
           fi
-
+          
           # Set outputs
           echo "duration=$duration" >> $GITHUB_OUTPUT
           echo "status=$status" >> $GITHUB_OUTPUT
-          echo "total=${total:-0}" >> $GITHUB_OUTPUT
           echo "passed=${passed:-0}" >> $GITHUB_OUTPUT
           echo "failed=${failed:-0}" >> $GITHUB_OUTPUT
           echo "skipped=${skipped:-0}" >> $GITHUB_OUTPUT
           echo "failed_tests<<EOF" >> $GITHUB_OUTPUT
           echo "$failed_tests" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-
-          exit $status
-
+          
+          test "$status" = "success"
+        
       - name: Upload test results
         id: upload-results
         if: always()
@@ -98,7 +120,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "*Sanity Tests ${{ job.status == 'success' && '✅ PASSED' || '❌ FAILED' }}*\n\n*Run Details:*\n• Total Tests: ${{ steps.run-tests.outputs.total }}\n• Passed: ${{ steps.run-tests.outputs.passed }}\n• Failed: ${{ steps.run-tests.outputs.failed }}\n• Skipped: ${{ steps.run-tests.outputs.skipped }}\n• Duration: ${{ steps.run-tests.outputs.duration }}s\n• Run: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>\n• Report: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload-results.outputs.artifact-id }}|Download Report>${{ steps.run-tests.outputs.failed != '0' && '\n\n*Failed Tests:*\n' || '' }}${{ steps.run-tests.outputs.failed_tests }}"
+              "text": "*Sanity Tests ${{ job.status == 'success' && '✅ PASSED' || '❌ FAILED' }}*\n\n*Run Details:*\n• Tests: ${{ steps.run-tests.outputs.passed }} passed, ${{ steps.run-tests.outputs.failed }} failed, ${{ steps.run-tests.outputs.skipped }} skipped\n• Duration: ${{ steps.run-tests.outputs.duration }}s\n• Run: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>\n• Report: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload-results.outputs.artifact-id }}|Download Report>${{ steps.run-tests.outputs.failed != '0' && '\n\n*Failed Tests:*\n' || '' }}${{ steps.run-tests.outputs.failed_tests }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
