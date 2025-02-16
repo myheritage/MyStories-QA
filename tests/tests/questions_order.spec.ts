@@ -6,19 +6,16 @@ import { CookieConsentHandler } from '../helpers/CookieConsentHandler';
 import { CookieConsentOption } from '../pages/BasePage';
 
 /**
- * Questions Order and Schedule Tests
- * 
- * These tests verify the functionality of:
- * - Question reordering via drag and drop
- * - Schedule date updates after reordering
- * - Schedule updates after answering questions
- * - Schedule updates after question management (add/delete)
- */
-test.describe('Questions Order and Schedule', {
-  tag: ['@Full', '@Questions']
-}, () => {
-  let testData: TestDataGenerator;
 
+Questions Order and Schedule Tests
+These tests verify the functionality of:
+Question reordering via drag and drop (using keyboard drag)
+Schedule date updates after reordering
+Schedule updates after answering questions
+Schedule updates after question management (add/delete) */
+
+test.describe('Questions Order and Schedule', { tag: ['@Full', '@Questions'] }, () => {
+  let testData: TestDataGenerator;
   test.beforeEach(async ({ page }) => {
     testData = new TestDataGenerator();
 
@@ -34,22 +31,25 @@ test.describe('Questions Order and Schedule', {
     if (await cookieHandler.isVisible()) {
       await cookieHandler.handle(CookieConsentOption.ALLOW_ALL);
     }
-  });
 
-  /**
-   * Verify question reordering (dates stay with positions)
-   * 
-   * Steps:
-   * 1. Complete purchase flow to access questions
-   * 2. Get initial question text and dates
-   * 3. Move question from position 1 to position 3
-   * 4. Verify question moved but dates stayed with positions
-   */
-  test('verify question reordering', async ({ page }) => {
-    // Generate test data and complete order flow
+    // Complete order flow to access questions.
     const userDetails = await testData.generateGiftGiver({ withState: true });
     await TestFlowHelper.completeOrderFlow(page, userDetails);
     await TestFlowHelper.goToDashboard(page);
+  });
+
+  /**
+  
+  Verify question reordering (dates stay with positions)
+  Steps:
+  Complete purchase flow to access questions
+  Get initial question text and dates
+  Move question from position 1 to position 3 using keyboard drag approach
+  Verify question moved but dates stayed with positions */
+
+  test('verify question reordering', { // Generate test data and complete order flow
+      tag: ['@Sanity']
+  }, async ({ page }) => { 
 
     // Initialize questions page
     const questionsPage = new QuestionsPage(page);
@@ -58,9 +58,17 @@ test.describe('Questions Order and Schedule', {
     const initialQuestions = await questionsPage.getAllQuestionsInfo();
     console.log('Initial questions state:', initialQuestions);
 
-    // Move first question to third position
-    await questionsPage.dragQuestionToPosition(1, 3);
-    await page.waitForTimeout(1000); // Wait for any animations
+    // Move first question to third position using keyboard drag approach
+    const dragHandle = page.locator('[aria-roledescription="sortable"]').first();
+    await dragHandle.focus();
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(200);
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(200);
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(1000);
 
     // Verify both content and dates after reordering
     await questionsPage.verifyQuestionOrder(initialQuestions, 1, 3);
@@ -68,27 +76,23 @@ test.describe('Questions Order and Schedule', {
   });
 
   /**
-   * Verify answered question affects scheduling
-   * 
-   * Steps:
-   * 1. Complete purchase flow to access questions
-   * 2. Get initial schedule dates
-   * 3. Answer question 2
-   * 4. Verify:
-   *    - Question 2 shows as answered
-   *    - Question 2 has no schedule date
-   *    - Later questions' dates shifted up
-   */
-  test('verify answered question updates schedule', async ({ page }) => {
-    // Generate test data and complete order flow
-    const userDetails = await testData.generateGiftGiver({ withState: true });
-    await TestFlowHelper.completeOrderFlow(page, userDetails);
-    await TestFlowHelper.goToDashboard(page);
+  
+  Verify answered question affects scheduling
+  Steps:
+  Complete purchase flow to access questions
+  Get initial schedule dates
+  Answer question 2
+  Verify:
+  Question 2 shows as answered
+  Question 2 has no schedule date
+  Later questions' dates shifted up */
+
+  test('verify answered question updates schedule', async ({ page }) => { // Generate test data and complete order flow
 
     // Initialize questions page
     const questionsPage = new QuestionsPage(page);
 
-    // Get initial state
+    // Get initial state (schedule dates)
     const initialDates = await questionsPage.getAllScheduleDates();
     console.log('Initial schedule dates:', initialDates);
 
@@ -96,6 +100,7 @@ test.describe('Questions Order and Schedule', {
     await questionsPage.startWriting(2);
     await questionsPage.writeAnswer('This is a test answer for the second question.');
     await questionsPage.saveAnswer();
+    await page.waitForTimeout(2000);
     await questionsPage.goBack();
 
     // Verify question shows as answered
@@ -111,57 +116,86 @@ test.describe('Questions Order and Schedule', {
     console.log('Updated schedule dates:', updatedDates);
 
     // Verify dates shifted correctly:
-    // Position 1 -> Feb 12 (unchanged)
+    // Position 1 remains unchanged (e.g., Feb 12 remains the same)
     expect(updatedDates[0]).toBe(initialDates[0]);
-    // Position 3 -> Feb 19 (shifted up)
+    // Position 3 should now reflect the former position 2's date (e.g., Feb 19)
     expect(updatedDates[2]).toBe(initialDates[1]);
-    // Position 4 -> Feb 26 (shifted up)
+    // Position 4 should now reflect the former position 3's date (e.g., Feb 26)
     expect(updatedDates[3]).toBe(initialDates[2]);
   });
 
   /**
-   * Verify question management affects schedule
-   * 
-   * Steps:
-   * 1. Complete purchase flow to access questions
-   * 2. Get initial schedule dates
-   * 3. Delete a question and verify schedule updates
-   * 4. Add a new question and verify schedule updates
-   */
-  test('verify question management affects schedule', async ({ page }) => {
-    // Generate test data and complete order flow
-    const userDetails = await testData.generateGiftGiver({ withState: true });
-    await TestFlowHelper.completeOrderFlow(page, userDetails);
-    await TestFlowHelper.goToDashboard(page);
+  
+  Verify question management affects schedule
+  Steps:
+  Complete purchase flow to access questions
+  Get initial schedule dates
+  Delete a question and verify schedule updates
+  Add a new question and verify schedule updates */
+
+  test('verify question delete and add affects schedule', async ({ page }) => {
 
     // Initialize questions page
     const questionsPage = new QuestionsPage(page);
 
-    // Get initial schedule dates
+    // Retrieve the initial state.
+    const initialQuestions = await questionsPage.getAllQuestionsInfo();
     const initialDates = await questionsPage.getAllScheduleDates();
+    console.log('Initial questions:', initialQuestions);
     console.log('Initial schedule dates:', initialDates);
 
-    // Delete the second question
+    // Ensure there are enough questions.
+    expect(initialQuestions.length).toBeGreaterThanOrEqual(4);
+
+    // Save the original last schedule date for later validation.
+    const originalLastDate = initialDates[initialDates.length - 1];
+
+    // --- Deletion Part ---
+    // Delete the 2nd question.
     await questionsPage.deleteQuestion(2);
-    await page.waitForTimeout(1000); // Wait for any animations
+    await page.waitForTimeout(1000); // Wait for animations and update.
 
-    // Get schedule dates after deletion
+    // Retrieve state after deletion.
+    const questionsAfterDelete = await questionsPage.getAllQuestionsInfo();
     const datesAfterDelete = await questionsPage.getAllScheduleDates();
-    console.log('Schedule dates after deletion:', datesAfterDelete);
+    console.log('After deletion - questions:', questionsAfterDelete);
+    console.log('After deletion - schedule dates:', datesAfterDelete);
 
-    // Verify schedule dates have been updated after deletion
-    await questionsPage.verifyScheduleDatesAfterDelete(initialDates, datesAfterDelete, 2);
+    // Verify question strings after deletion:
+    //   - Position 1 remains unchanged.
+    //   - Position 2 should now be the original 3rd question.
+    //   - Position 3 should now be the original 4th question.
+    expect(questionsAfterDelete[0].text).toEqual(initialQuestions[0].text);
+    expect(questionsAfterDelete[1].text).toEqual(initialQuestions[2].text);
+    expect(questionsAfterDelete[2].text).toEqual(initialQuestions[3].text);
 
-    // Add a new custom question
-    const newQuestion = 'What is your most cherished family tradition?';
+    // Verify schedule dates after deletion:
+    //   - Position 1 remains the same.
+    //   - Position 2 remains the same as initial (from the deleted Q2).
+    //   - The last question's schedule date now should equal the previous question's date before deletion.
+    //     That is, if initialDates were [D1, D2, D3, D4], then after deletion we expect [D1, D2, D3],
+    //     so the last date after deletion should be initialDates[initialDates.length - 2].
+    expect(datesAfterDelete[0]).toEqual(initialDates[0]);
+    expect(datesAfterDelete[1]).toEqual(initialDates[1]);
+    const expectedDeletionLastDate = initialDates[initialDates.length - 2];
+    expect(datesAfterDelete[datesAfterDelete.length - 1]).toEqual(expectedDeletionLastDate);
+
+    // --- Addition Part ---
+    // Add a new custom question.
+    const newQuestion = '@@@ New Added question to test send schedule @@@';
     await questionsPage.addCustomQuestion(newQuestion);
-    await page.waitForTimeout(1000); // Wait for any animations
+    await page.waitForTimeout(1000); // Wait for update.
 
-    // Get schedule dates after adding new question
+    // Retrieve state after adding the new question.
+    const questionsAfterAdd = await questionsPage.getAllQuestionsInfo();
     const datesAfterAdd = await questionsPage.getAllScheduleDates();
-    console.log('Schedule dates after adding question:', datesAfterAdd);
+    console.log('After addition - questions:', questionsAfterAdd);
+    console.log('After addition - schedule dates:', datesAfterAdd);
 
-    // Verify schedule dates have been updated after adding question
-    await questionsPage.verifyScheduleDatesAfterAdd(datesAfterDelete, datesAfterAdd);
+    // Verify that the new custom question is appended as the last question.
+    expect(questionsAfterAdd[questionsAfterAdd.length - 1].text).toEqual(newQuestion);
+
+    // Verify that the scheduled send date for the new question is the same as the original last schedule date.
+    expect(datesAfterAdd[datesAfterAdd.length - 1]).toEqual(originalLastDate);
   });
 });

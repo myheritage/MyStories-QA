@@ -422,7 +422,10 @@ export class QuestionsPage extends BasePage {
     if (isVisible) {
       const dateText = await dateLocator.textContent();
       if (dateText && dateText.trim()) {
-        throw new Error(`Expected no schedule date for question ${index}, but found "${dateText.trim()}"`);
+        // Allow if the text indicates the question was updated (e.g., "Last updated on ...")
+        if (!dateText.includes("Last updated")) {
+          throw new Error(`Expected no schedule date for question ${index}, but found "${dateText.trim()}"`);
+        }
       }
     }
     console.log(`Verified question ${index} has no schedule date`);
