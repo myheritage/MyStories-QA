@@ -16,6 +16,7 @@ tests/data/real-card.yml
 visual-testing/actual/
 visual-testing/diff/
 visual-testing/reports/
+lighthouse-report.html
 
 # IDE
 .vscode/
