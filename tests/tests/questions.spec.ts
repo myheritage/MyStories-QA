@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { QuestionsPage } from '../pages/QuestionsPage';
 import { TestDataGenerator } from '../helpers/TestDataGenerator';
 import { ScreenshotHelper } from '../helpers/ScreenshotHelper';
@@ -193,7 +193,7 @@ test.describe('Questions Flow', {
       const questionsPage = new QuestionsPage(page);
 
       // Add a custom question
-      const customQuestion = 'What is your favorite childhood memory?';
+      const customQuestion = '@@@ This is a custom question for testing purposes. @@@';
       await questionsPage.addCustomQuestion(customQuestion);
       await questionsPage.verifyQuestionExists(customQuestion);
 
@@ -216,6 +216,80 @@ test.describe('Questions Flow', {
       try {
         // Try to take error screenshot, but don't fail if it fails
         await ScreenshotHelper.takeFullPageScreenshot(page, 'question-management-failed')
+          .catch(screenshotError => console.error('Failed to take error screenshot:', screenshotError));
+      } catch (screenshotError) {
+        console.error('Failed to take error screenshot:', screenshotError);
+      }
+      throw error;
+    }
+  });
+
+  /**
+   * Verify Story Name and Author Test
+   * 
+   * Steps:
+   * 1. Get to the questions page
+   * 2. Get current Story name
+   * 3. Verify Story author is the same name of the one who purchased the product
+   * 4. Edit Book name by clicking on edit button
+   * 5. Clear the text and type new text
+   * 6. Click save
+   * 7. Verify book name was updated
+   * 
+   * @tags @Full
+   */
+  test('verify story name and author', {
+    tag: ['@Full']
+  }, async ({ page }, testInfo) => {
+    try {
+      // Generate test data
+      const userDetails = await testData.generateGiftGiver({ withState: true });
+      console.log('Generated test data:', userDetails);
+
+      // Construct full name from first name and last name
+      const fullName = `${userDetails.firstName} ${userDetails.lastName}`;
+      console.log('Full name:', fullName);
+
+      // Complete purchase flow with helper
+      await TestFlowHelper.completeOrderFlow(page, userDetails);
+      await TestFlowHelper.goToDashboard(page);
+
+      // Initialize pages
+      const questionsPage = new QuestionsPage(page);
+
+      // Get current Story name
+      const storyName = await questionsPage.getStoryName();
+      console.log('Current Story name:', storyName);
+
+      // Verify Story author is the same name of the one who purchased the product
+      const storyAuthor = await questionsPage.getStoryAuthor();
+      const expectedAuthor = `By ${fullName}`;
+      expect(storyAuthor).toBe(expectedAuthor);
+      console.log('Verified Story author:', storyAuthor);
+
+      // Edit Book name by clicking on edit button
+      await questionsPage.clickEditBookNameButton();
+
+      // Clear the text and type new text
+      const newBookName = 'This is a text for automated test';
+      await questionsPage.fillBookNameInput(newBookName);
+
+      // Click save
+      await questionsPage.clickSaveBookNameButton();
+
+      // Verify book name was updated
+      const updatedBookName = await questionsPage.getStoryName();
+      expect(updatedBookName).toBe(newBookName);
+      console.log('Verified updated book name:', updatedBookName);
+
+      // Take final screenshot before test ends
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(1000); // Wait for any animations
+      await ScreenshotHelper.takeFullPageScreenshot(page, 'verify-story-name-and-author-complete');
+    } catch (error) {
+      try {
+        // Try to take error screenshot, but don't fail if it fails
+        await ScreenshotHelper.takeFullPageScreenshot(page, 'verify-story-name-and-author-failed')
           .catch(screenshotError => console.error('Failed to take error screenshot:', screenshotError));
       } catch (screenshotError) {
         console.error('Failed to take error screenshot:', screenshotError);

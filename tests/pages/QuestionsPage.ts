@@ -119,8 +119,63 @@ export class QuestionsPage extends BasePage {
   private readonly notStartedTab = this.page.getByRole('tab', { name: /^Not started/ });
   private readonly completedTab = this.page.getByRole('tab', { name: /^Completed/ });
 
+  // Story elements
+  private readonly storyNameLocator = this.page.locator('#root > div > div.layout-content > div > div.page-wrapper-outer.dashboard-actions-outer > div > div > div.action-section > div.header-section > div.book-title > span');
+  private readonly storyAuthorLocator = this.page.locator('#root > div > div.layout-content > div > div.page-wrapper-outer.dashboard-actions-outer > div > div > div.action-section > div.header-section > div.book-author');
+  private readonly editBookNameButton = this.page.locator('#root > div > div.layout-content > div > div.page-wrapper-outer.dashboard-actions-outer > div > div > div.action-section > div.header-section > div.book-title > div > div > img');
+  private readonly bookNameInput = this.page.locator('#root > div > div.layout-content > div > div.page-wrapper-outer.dashboard-actions-outer > div > div.ant-modal-root.css-jaljq0 > div.ant-modal-wrap.ant-modal-centered > div > div:nth-child(1) > div > div.ant-modal-body > span > textarea');
+  private readonly saveBookNameButton = this.page.locator('#root > div > div.layout-content > div > div.page-wrapper-outer.dashboard-actions-outer > div > div.ant-modal-root.css-jaljq0 > div.ant-modal-wrap.ant-modal-centered > div > div:nth-child(1) > div > div.ant-modal-footer > button.ant-btn.css-jaljq0.ant-btn-primary.ant-btn-color-primary.ant-btn-variant-solid');
+
   constructor(page: Page) {
     super(page);
+  }
+  
+  /**
+   * Get the current story name.
+   * @returns The story name as a string.
+   */
+  async getStoryName(): Promise<string> {
+    return (await this.storyNameLocator.textContent()) ?? '';
+  }
+
+  /**
+   * Get the current story author.
+   * @returns The story author as a string.
+   */
+  async getStoryAuthor(): Promise<string> {
+    return (await this.storyAuthorLocator.textContent()) ?? '';
+  }
+
+  /**
+   * Click the edit button to edit the book name.
+   */
+  async clickEditBookNameButton(): Promise<void> {
+    await this.editBookNameButton.click();
+  }
+
+  /**
+   * Fill the book name input with a new name.
+   * @param newBookName - The new book name to set.
+   */
+  async fillBookNameInput(newBookName: string): Promise<void> {
+    console.log('Filling book name input with:', newBookName);
+    await this.bookNameInput.click(); // Focus on the input field
+    await this.bookNameInput.fill(''); // Clear the input field
+    await this.bookNameInput.type(newBookName); // Type the new book name
+    const filledValue = await this.bookNameInput.inputValue();
+    console.log('Filled book name input value:', filledValue);
+
+    // Verify that the input value matches the expected new book name
+    if (filledValue !== newBookName) {
+      throw new Error(`Failed to fill book name input. Expected: "${newBookName}", but got: "${filledValue}"`);
+    }
+  }
+
+  /**
+   * Click the save button to save the new book name.
+   */
+  async clickSaveBookNameButton(): Promise<void> {
+    await this.saveBookNameButton.click();
   }
 
   /**
@@ -609,6 +664,7 @@ export class QuestionsPage extends BasePage {
     
     // Wait for save to complete and editor to update
     await this.page.waitForLoadState('networkidle');
+    await this.page.waitForTimeout(1000);
     console.log('Save completed');
   }
 
