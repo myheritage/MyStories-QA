@@ -40,6 +40,9 @@ export const COOKIES: {
     { name: 'bSession', domain: 'wix.com', category: 'mandatory' },
     { name: 'sentryReplaySession', domain: 'app.mystories.com', category: 'mandatory' },
     { name: '__mp_opt_in_out_', domain: 'mystories.com', category: 'mandatory' },
+    { name: 'incap_ses_', domain: 'mystories.com', category: 'mandatory' },
+    { name: 'nlbi_', domain: 'mystories.com', category: 'mandatory' },
+    { name: 'visid_incap_', domain: 'mystories.com', category: 'mandatory' },
     { name: 'hs', domain: 'www.mystories.com', category: 'mandatory' },
     { name: 'ssr-caching', domain: 'www.mystories.com', category: 'mandatory' },
     { name: 'svSession', domain: 'www.mystories.com', category: 'mandatory' },
@@ -52,6 +55,7 @@ export const COOKIES: {
   ANALYTICS: [
     { name: '_cio', domain: 'customer.io', category: 'analytics' },
     { name: '_cioanonid', domain: 'customer.io', category: 'analytics' },
+    { name: '_wixAB3', domain: 'wix.com', category: 'analytics' },
     { name: 'cookiecookie', domain: 'app.mystories.com', category: 'analytics' }
   ],
   /**
@@ -61,7 +65,7 @@ export const COOKIES: {
   ADVERTISING: [
     { name: 'events/page.gif', domain: 'customer.io', category: 'advertising' },
     { name: '__anon_id', domain: 'app.mystories.com', category: 'advertising' },
-    { name: '__anon_id', domain: 'app.mystories.com', category: 'advertising' }, // Duplicate as specified
+    { name: '__mpq_', domain: 'app.mystories.com', category: 'advertising' },
     { name: 'mp_#_mixpanel', domain: 'app.mystories.com', category: 'advertising' },
     { name: 'mp_#_mixpanel', domain: 'mystories.com', category: 'advertising' }
   ]

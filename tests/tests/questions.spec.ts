@@ -16,6 +16,7 @@ import * as path from 'path';
  * - Adding and managing questions
  * - Preview and PDF generation
  * - Question filtering
+ *  - Verify book name and author + edit book name
  */
 test.describe('Questions Flow', {
   tag: ['@Full', '@Questions']

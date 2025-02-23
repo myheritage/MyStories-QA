@@ -48,7 +48,7 @@ test.describe('Questions Order and Schedule', { tag: ['@Full', '@Questions'] }, 
   Verify question moved but dates stayed with positions */
 
   test('verify question reordering', { // Generate test data and complete order flow
-      tag: ['@Sanity']
+      tag: ['@Full']
   }, async ({ page }) => { 
 
     // Initialize questions page
