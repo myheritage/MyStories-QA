@@ -26,7 +26,7 @@ export class StoryDetailsPage extends BasePage {
   private readonly storytellerLastName = this.page.getByRole('textbox', { name: 'Last name' });
   private readonly storytellerEmail = this.page.getByRole('textbox', { name: 'example@example.com' });
   private readonly giftDate = this.page.getByRole('textbox', { name: 'Pick a date' });
-  private readonly giftGiverName = this.page.locator('#root > div > div.layout-content > div > div > div > div.ant-col.ant-col-xs-24.ant-col-sm-24.ant-col-md-12.ant-col-lg-16.css-jaljq0 > div > div:nth-child(2) > div > div > div > div:nth-child(2) > form > div > div:nth-child(3) > div > div:nth-child(2) > div > div > div.ant-col.ant-form-item-control.css-jaljq0 > div > div > input');
+  private readonly giftGiverName = this.page.locator('#root > div > div.layout-content > div > div > div > div.ant-col.ant-col-xs-24.ant-col-sm-24.ant-col-md-12.ant-col-lg-14.ant-col-xl-16.css-jaljq0 > div > div:nth-child(2) > div > div > div > div:nth-child(2) > form > div > div:nth-child(3) > div > div:nth-child(2) > div > div > div.ant-col.ant-form-item-control.css-jaljq0 > div > div > input');
   private readonly giftMessage = this.page.getByText('I wanted to give you');
   private readonly continueButton = this.page.getByRole('button', { name: 'Continue' });
 

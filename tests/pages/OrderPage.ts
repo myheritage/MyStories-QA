@@ -7,10 +7,10 @@ export type OrderType = 'I will' | 'Someone else';
 
 export class OrderPage extends BasePage {
   // Locators
-  private readonly iWillOption = this.page.locator('#root > div > div.layout-content > div > div > div > div.ant-col.ant-col-xs-24.ant-col-sm-24.ant-col-md-12.ant-col-lg-16.css-jaljq0 > div > div:nth-child(2) > div > div > div > div:nth-child(2) > div > div > div:nth-child(1) > div');
-  private readonly someoneElseOption = this.page.locator('#root > div > div.layout-content > div > div > div > div.ant-col.ant-col-xs-24.ant-col-sm-24.ant-col-md-12.ant-col-lg-16.css-jaljq0 > div > div:nth-child(2) > div > div > div > div:nth-child(2) > div > div > div:nth-child(2) > div');
+  private readonly iWillOption = this.page.locator('#root > div > div.layout-content > div > div > div > div.ant-col.ant-col-xs-24.ant-col-sm-24.ant-col-md-12.ant-col-lg-14.ant-col-xl-16.css-jaljq0 > div > div:nth-child(2) > div > div > div > div:nth-child(2) > div > div > div:nth-child(1) > div');
+  private readonly someoneElseOption = this.page.locator('#root > div > div.layout-content > div > div > div > div.ant-col.ant-col-xs-24.ant-col-sm-24.ant-col-md-12.ant-col-lg-14.ant-col-xl-16.css-jaljq0 > div > div:nth-child(2) > div > div > div > div:nth-child(2) > div > div > div:nth-child(2) > div');
   private readonly nextButton = this.page.getByRole('button', { name: 'Next' });
-  private readonly pageTitle = this.page.locator('#root > div > div.layout-content > div > div > div > div.ant-col.ant-col-xs-24.ant-col-sm-24.ant-col-md-12.ant-col-lg-16.css-jaljq0 > div > div:nth-child(2) > div > div > div > div:nth-child(1) > h3');
+  private readonly pageTitle = this.page.locator('#root > div > div.layout-content > div > div > div > div.ant-col.ant-col-xs-24.ant-col-sm-24.ant-col-md-12.ant-col-lg-14.ant-col-xl-16.css-jaljq0 > div > div:nth-child(2) > div > div > div > div:nth-child(1) > h3');
   private readonly cookieHandler: CookieConsentHandler;
 
   constructor(page: Page) {
