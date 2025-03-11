@@ -7,7 +7,7 @@ export const PRICES = {
   MARKET_PRICE: '99.00',
   
   // Price for each additional book copy beyond the first
-  ADDITIONAL_COPY_PRICE: '38.00',
+  ADDITIONAL_COPY_PRICE: '39.00',
   
   // Promo code configurations
   PROMO_CODES: {
