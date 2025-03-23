@@ -1,29 +1,40 @@
-# Dependencies
+# ───── Dependencies ─────
 node_modules/
 package-lock.json
 
-# Environment
+# ───── Environment Variables ─────
 .env
+.env.*
 
-# Test results
+# ───── Build Artifacts & Logs ─────
+dist/
+build/
+*.log
+*.map
+*.tsbuildinfo
+
+# ───── Test Artifacts ─────
 test-results/
 playwright-report/
+lighthouse-report.html
 
-# Real card details (never commit)
-tests/data/real-card.yml
-
-# Visual testing artifacts
+# ───── Visual Testing ─────
 visual-testing/actual/
 visual-testing/diff/
 visual-testing/reports/
-lighthouse-report.html
 
-# IDE
+# ───── Sensitive Test Data (real cards, etc.) ─────
+tests/data/real-card.yml
+
+# ───── IDE & Editor Settings ─────
 .vscode/
 .idea/
 *.iml
 
-# OS
+# ───── System Files ─────
 .DS_Store
 Thumbs.db
-lighthouse-report.html
+
+# ───── Backup / Temp Files ─────
+*.tmp
+*.bak
