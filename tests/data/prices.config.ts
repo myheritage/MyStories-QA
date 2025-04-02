@@ -7,7 +7,7 @@ export const PRICES = {
   MARKET_PRICE: '99.00',
   
   // Price for each additional book copy beyond the first
-  ADDITIONAL_COPY_PRICE: '39.00',
+  ADDITIONAL_COPY_PRICE: '49.00',
   
   // Promo code configurations
   PROMO_CODES: {
@@ -56,12 +56,12 @@ export const STATES_REQUIRING_ACKNOWLEDGMENT = [
  * 
  * Price calculation:
  * - First copy: MARKET_PRICE ($99.00)
- * - Each additional copy: ADDITIONAL_COPY_PRICE ($38.00)
+ * - Each additional copy: ADDITIONAL_COPY_PRICE ($49.00)
  * 
  * Examples:
  * - 1 copy = $99.00
- * - 2 copies = $99.00 + $38.00 = $137.00
- * - 3 copies = $99.00 + (2 × $38.00) = $175.00
+ * - 2 copies = $99.00 + $49.00 = $148.00
+ * - 3 copies = $99.00 + (2 × $49.00) = $197.00
  */
 export function calculateTotalPrice(copies: number): string {
   if (copies <= 0) {
