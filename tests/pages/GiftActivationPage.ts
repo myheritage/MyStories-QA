@@ -4,10 +4,10 @@ import { URLS } from '../data/test.config';
 
 export class GiftActivationPage extends BasePage {
   // Locators
-  protected readonly firstNameInput = this.page.locator('#root > div > div.layout-content > div > div > div > div > div:nth-child(2) > div > div.ant-row.css-jaljq0 > div:nth-child(1) > div > div > div.ant-col.ant-form-item-control.css-jaljq0 > div > div > input');
-  protected readonly lastNameInput = this.page.locator('#root > div > div.layout-content > div > div > div > div > div:nth-child(2) > div > div.ant-row.css-jaljq0 > div:nth-child(2) > div > div > div.ant-col.ant-form-item-control.css-jaljq0 > div > div > input');
-  protected readonly emailInput = this.page.locator('#root > div > div.layout-content > div > div > div > div > div:nth-child(2) > div > div.ant-form-item.css-jaljq0 > div > div.ant-col.ant-form-item-control.css-jaljq0 > div > div > input');
-  protected readonly continueButton = this.page.locator('#root > div > div.layout-content > div > div > div > div > div:nth-child(3) > div > button > span');
+  protected readonly firstNameInput = this.page.locator('input[placeholder="First name"]');
+  protected readonly lastNameInput = this.page.locator('input[placeholder="Last name"]');
+  protected readonly emailInput = this.page.locator('input[type="email"]');
+  protected readonly continueButton = this.page.getByRole('button', { name: 'Continue' });
 
   constructor(page: Page) {
     super(page);
@@ -19,11 +19,11 @@ export class GiftActivationPage extends BasePage {
     email: string;
   }) {
     console.log('Verifying prefilled details:', userDetails);
-    await this.firstNameInput.waitFor();
+    await this.firstNameInput.waitFor({ state: 'visible', timeout: 10000 });
     const firstName = await this.firstNameInput.inputValue();
     const lastName = await this.lastNameInput.inputValue();
     const email = await this.emailInput.inputValue();
-    
+
     expect(firstName).toBe(userDetails.firstName);
     expect(lastName).toBe(userDetails.lastName);
     expect(email).toBe(userDetails.email);
@@ -31,7 +31,8 @@ export class GiftActivationPage extends BasePage {
 
   async completeActivation() {
     console.log('Completing gift activation');
+    await this.continueButton.waitFor({ state: 'visible', timeout: 10000 });
     await this.continueButton.click();
-    await this.page.waitForURL(URLS.APP);
+    await this.page.waitForURL(URLS.APP, { waitUntil: 'load', timeout: 30000 });
   }
 }
