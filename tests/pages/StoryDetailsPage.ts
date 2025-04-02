@@ -26,16 +26,18 @@ export class StoryDetailsPage extends BasePage {
   private readonly storytellerLastName = this.page.getByRole('textbox', { name: 'Last name' });
   private readonly storytellerEmail = this.page.getByRole('textbox', { name: 'example@example.com' });
   private readonly giftDate = this.page.getByRole('textbox', { name: 'Pick a date' });
-  private readonly giftGiverName = this.page.locator('#root > div > div.layout-content > div > div > div > div.ant-col.ant-col-xs-24.ant-col-sm-24.ant-col-md-12.ant-col-lg-14.ant-col-xl-16.css-jaljq0 > div > div:nth-child(2) > div > div > div > div:nth-child(2) > form > div > div:nth-child(3) > div > div:nth-child(2) > div > div > div.ant-col.ant-form-item-control.css-jaljq0 > div > div > input');
+  private readonly giftGiverName = this.page.getByPlaceholder('Write your name');
   private readonly giftMessage = this.page.getByText('I wanted to give you');
   private readonly continueButton = this.page.getByRole('button', { name: 'Continue' });
+  private readonly genderDropdown = this.page.locator('text=Gender >> xpath=.. >> xpath=following-sibling::div//div[contains(@class, "ant-select-selector")]')
+
 
   // Your details form locators (both flows)
   private readonly formTitle = this.page.getByRole('heading', { name: 'Your details' });
   private readonly giverFirstName = this.page.getByRole('textbox', { name: 'First name' });
   private readonly giverLastName = this.page.getByRole('textbox', { name: 'Last name' });
   private readonly giverEmail = this.page.getByRole('textbox', { name: 'example@example.com' });
-  private readonly countryDropdown = this.page.locator('#yourDetailsStep > div > div:nth-child(2) > div > div:nth-child(4) > div > div > div > div.ant-col.ant-form-item-control.css-jaljq0 > div > div > div > div > span > span.ant-select-selection-item');
+  private readonly countryDropdown = this.page.locator('text=Country >> xpath=.. >> xpath=following-sibling::div//div[contains(@class, "ant-select-selector")]');
   private readonly stateDropdown = this.page.locator('#yourDetailsStep > div > div:nth-child(2) > div > div:nth-child(4) > div > div.ant-form-item.state-form-item.css-jaljq0 > div > div.ant-col.ant-form-item-control.css-jaljq0 > div > div > div > div > span > span.ant-select-selection-item');
   private readonly subscriptionAcknowledgment = this.page.getByRole('checkbox', { name: 'I acknowledge that this is a' });
   private readonly checkoutButton = this.page.getByRole('button', { name: /Continue to checkout/i });
@@ -51,11 +53,13 @@ export class StoryDetailsPage extends BasePage {
 
     if (copies > 1) {
       console.log('Opening copies dropdown');
-      await this.page.locator('#yourDetailsStep').getByTitle('1 book (included in your').click();
-      
+      const dropdown = this.page.locator('#yourDetailsStep').getByTitle('1 book (included in your');
+      await dropdown.scrollIntoViewIfNeeded(); // Ensure the dropdown is visible
+      await dropdown.click();
       console.log(`Selecting ${copies} copies`);
-      await this.page.getByText(`${copies} books (1 included +`).click();
-      
+      const option = this.page.getByText(`${copies} books (1 included +`);
+      await option.scrollIntoViewIfNeeded(); // Ensure the option is visible
+      await option.click({ force: true });
       console.log('Copies selected successfully');
     }
   }
@@ -64,10 +68,11 @@ export class StoryDetailsPage extends BasePage {
     // Wait for form to be ready
     await this.page.waitForLoadState('networkidle');
     await this.storytellerFirstName.waitFor({ state: 'visible', timeout: 10000 });
-
     console.log('Filling storyteller details:', details);
     await this.storytellerFirstName.fill(details.firstName);
     await this.storytellerLastName.fill(details.lastName);
+    await this.genderDropdown.click();
+    await this.page.keyboard.press('Enter');
     await this.storytellerEmail.fill(details.email);
 
     if (details.giftDate) {
@@ -136,6 +141,8 @@ export class StoryDetailsPage extends BasePage {
     await this.giverFirstName.fill(details.firstName);
     await this.giverLastName.fill(details.lastName);
     await this.giverEmail.fill(details.email);
+    await this.genderDropdown.click();
+    await this.page.keyboard.press('Enter');
 
     // Select country
     console.log('Selecting country:', details.country);
