@@ -56,12 +56,10 @@ export class StoryDetailsPage extends BasePage {
       const dropdown = this.page.locator('#yourDetailsStep').getByTitle('1 book (included in your');
       await dropdown.scrollIntoViewIfNeeded(); // Ensure the dropdown is visible
       await dropdown.click();
-      
       console.log(`Selecting ${copies} copies`);
       const option = this.page.getByText(`${copies} books (1 included +`);
       await option.scrollIntoViewIfNeeded(); // Ensure the option is visible
       await option.click({ force: true });
-
       console.log('Copies selected successfully');
     }
   }
@@ -75,8 +73,6 @@ export class StoryDetailsPage extends BasePage {
     await this.storytellerLastName.fill(details.lastName);
     await this.genderDropdown.click();
     await this.page.keyboard.press('Enter');
-
-    
     await this.storytellerEmail.fill(details.email);
 
     if (details.giftDate) {
